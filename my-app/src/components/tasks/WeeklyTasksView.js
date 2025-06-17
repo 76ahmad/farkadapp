@@ -1,5 +1,3 @@
-// أنشئ ملف جديد: src/components/tasks/WeeklyTasksView.js
-
 import React, { useState } from 'react';
 import { 
   Calendar, Plus, Clock, Users, Package, AlertCircle,
@@ -7,7 +5,7 @@ import {
   XCircle, Send, FileText, DollarSign, Flag
 } from 'lucide-react';
 
-const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
+const WeeklyTasksView = ({ currentUser, inventory = [], workers = [], isContractor = false }) => {
   // المهام الأسبوعية
   const [weeklyTasks, setWeeklyTasks] = useState([
     {
@@ -17,7 +15,7 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
       startDate: '2024-06-17',
       endDate: '2024-06-23',
       priority: 'high',
-      status: 'active',
+      status: 'draft',
       budget: 15000,
       assignedManager: 'مدير الموقع - أحمد',
       managerId: 1,
@@ -55,6 +53,8 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
   // حساب الإحصائيات
   const stats = {
     total: weeklyTasks.length,
+    draft: weeklyTasks.filter(t => t.status === 'draft').length,
+    pending: weeklyTasks.filter(t => t.status === 'pending').length,
     active: weeklyTasks.filter(t => t.status === 'active').length,
     completed: weeklyTasks.filter(t => t.status === 'completed').length,
     delayed: weeklyTasks.filter(t => t.requests.some(r => r.type === 'extension' && r.status === 'approved')).length,
@@ -139,7 +139,7 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
         id: Date.now(),
         ...formData,
         budget: parseFloat(formData.budget),
-        status: 'active',
+        status: 'draft', // تبدأ كمسودة
         progress: 0,
         dailyTasks: [],
         requests: [],
@@ -308,6 +308,7 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
                   <option value="سباكة">سباكة</option>
                   <option value="حدادة">حدادة</option>
                   <option value="دهان">دهان</option>
+                  <option value="بلاط">بلاط</option>
                 </select>
                 <input
                   type="number"
@@ -362,14 +363,16 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
   return (
     <div className="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">المهام الأسبوعية</h2>
-        <button
-          onClick={() => setShowAddTask(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Plus className="h-5 w-5" />
-          مهمة أسبوعية جديدة
-        </button>
+        <h2 className="text-2xl font-bold">المهام الأسبوعية - المقاول</h2>
+        {isContractor && (
+          <button
+            onClick={() => setShowAddTask(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Plus className="h-5 w-5" />
+            مهمة أسبوعية جديدة
+          </button>
+        )}
       </div>
 
       {/* الإحصائيات */}
@@ -383,32 +386,32 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
             <Calendar className="h-8 w-8 opacity-80" />
           </div>
         </div>
+
+        <div className="bg-gradient-to-r from-gray-500 to-gray-600 text-white p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-90">مسودة</p>
+              <p className="text-2xl font-bold">{stats.draft}</p>
+            </div>
+            <FileText className="h-8 w-8 opacity-80" />
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm opacity-90">في الانتظار</p>
+              <p className="text-2xl font-bold">{stats.pending}</p>
+            </div>
+            <Clock className="h-8 w-8 opacity-80" />
+          </div>
+        </div>
         
         <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm opacity-90">نشطة</p>
               <p className="text-2xl font-bold">{stats.active}</p>
-            </div>
-            <Clock className="h-8 w-8 opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">متأخرة</p>
-              <p className="text-2xl font-bold">{stats.delayed}</p>
-            </div>
-            <AlertCircle className="h-8 w-8 opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">مكتملة</p>
-              <p className="text-2xl font-bold">{stats.completed}</p>
             </div>
             <CheckCircle className="h-8 w-8 opacity-80" />
           </div>
@@ -433,6 +436,8 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
           className="w-full md:w-64 p-2 border rounded-lg"
         >
           <option value="all">جميع المهام</option>
+          <option value="draft">مسودة</option>
+          <option value="pending">في انتظار مدير الموقع</option>
           <option value="active">النشطة</option>
           <option value="completed">المكتملة</option>
           <option value="cancelled">الملغية</option>
@@ -458,7 +463,8 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
                       {task.priority === 'medium' && <Flag className="h-4 w-4 text-yellow-500" />}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {task.assignedManager} | {task.startDate} إلى {task.endDate}
+                      {task.assignedManager} | {task.startDate} إلى {task.endDate} | 
+                      الميزانية: {task.budget.toLocaleString()} د.أ
                     </p>
                   </div>
                 </div>
@@ -485,14 +491,53 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
                     </span>
                   )}
 
+                  {/* الأزرار */}
+                  <div className="flex gap-2">
+                    {task.status === 'draft' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm('هل تريد إرسال هذه المهمة لمدير الموقع؟')) {
+                            setWeeklyTasks(prev => prev.map(t => 
+                              t.id === task.id ? { ...t, status: 'pending' } : t
+                            ));
+                            alert('تم إرسال المهمة لمدير الموقع');
+                          }
+                        }}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                      >
+                        <Send className="h-4 w-4" />
+                        إرسال
+                      </button>
+                    )}
+                    
+                    {task.status === 'draft' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // يمكن إضافة وظيفة التعديل هنا
+                          alert('ميزة التعديل قيد التطوير');
+                        }}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                        تعديل
+                      </button>
+                    )}
+                  </div>
+
                   {/* الحالة */}
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     task.status === 'active' ? 'bg-green-100 text-green-800' :
                     task.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
+                    task.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    task.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                    'bg-red-100 text-red-800'
                   }`}>
                     {task.status === 'active' ? 'نشطة' : 
-                     task.status === 'completed' ? 'مكتملة' : 'ملغية'}
+                     task.status === 'completed' ? 'مكتملة' : 
+                     task.status === 'pending' ? 'في انتظار مدير الموقع' :
+                     task.status === 'draft' ? 'مسودة' : 'ملغية'}
                   </span>
                 </div>
               </div>
@@ -567,7 +612,7 @@ const WeeklyTasksView = ({ currentUser, inventory, workers }) => {
                                 <p className="text-xs text-gray-500">{request.date}</p>
                               </div>
                               
-                              {request.status === 'pending' && (
+                              {request.status === 'pending' && isContractor && (
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleRequest(task.id, request.id, 'approved')}

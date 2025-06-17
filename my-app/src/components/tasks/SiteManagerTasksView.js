@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Calendar, Users, Package, Clock, CheckCircle, 
   AlertCircle, ChevronDown, ChevronRight, Plus,
-  ClipboardList, UserCheck, Send, Eye
+  ClipboardList, UserCheck, Send, Eye, Star
 } from 'lucide-react';
 
 const SiteManagerTasksView = ({ currentUser, inventory = [], workers = [] }) => {
@@ -92,14 +92,29 @@ const SiteManagerTasksView = ({ currentUser, inventory = [], workers = [] }) => 
       notes: ''
     });
 
+    // فلترة العمال المتاحين حسب التخصص المطلوب
     const availableWorkers = workers.filter(w => 
       w.status === 'active' && 
       weeklyTask.requiredWorkers.some(req => req.specialization === w.specialization)
     );
 
+    // حساب العمال المطلوبين حسب التخصص
+    const workersBySpecialization = {};
+    weeklyTask.requiredWorkers.forEach(req => {
+      workersBySpecialization[req.specialization] = {
+        required: req.count,
+        available: workers.filter(w => w.status === 'active' && w.specialization === req.specialization)
+      };
+    });
+
     const handleSubmit = (e) => {
       e.preventDefault();
       
+      if (formData.selectedWorkers.length === 0) {
+        alert('يجب اختيار عامل واحد على الأقل');
+        return;
+      }
+
       const newDailyTask = {
         id: Date.now(),
         weeklyTaskId: weeklyTask.id,
@@ -111,6 +126,7 @@ const SiteManagerTasksView = ({ currentUser, inventory = [], workers = [] }) => 
       };
 
       setDailyTasks(prev => [...prev, newDailyTask]);
+      alert(`تم تعيين المهمة بنجاح لـ ${formData.selectedWorkers.length} عامل`);
       onClose();
     };
 
@@ -125,7 +141,7 @@ const SiteManagerTasksView = ({ currentUser, inventory = [], workers = [] }) => 
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
           <div className="p-6 border-b">
             <h3 className="text-xl font-bold">تقسيم المهمة: {weeklyTask.title}</h3>
             <p className="text-sm text-gray-600 mt-1">
@@ -161,26 +177,69 @@ const SiteManagerTasksView = ({ currentUser, inventory = [], workers = [] }) => 
 
             <div>
               <label className="block text-sm font-medium mb-1">اختر العمال *</label>
-              <div className="border rounded-lg p-3 max-h-48 overflow-y-auto">
-                {availableWorkers.length === 0 ? (
-                  <p className="text-gray-500 text-center">لا يوجد عمال متاحين</p>
-                ) : (
-                  <div className="space-y-2">
-                    {availableWorkers.map(worker => (
-                      <label key={worker.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input
-                          type="checkbox"
-                          checked={formData.selectedWorkers.includes(worker.id)}
-                          onChange={() => toggleWorker(worker.id)}
-                          className="rounded"
-                        />
-                        <span>{worker.name}</span>
-                        <span className="text-sm text-gray-500">({worker.specialization})</span>
-                      </label>
-                    ))}
+              
+              {/* عرض العمال حسب التخصص */}
+              {Object.entries(workersBySpecialization).map(([specialization, data]) => (
+                <div key={specialization} className="mb-4">
+                  <div className="bg-gray-50 p-2 rounded-t font-medium text-sm">
+                    {specialization} - مطلوب: {data.required} عمال
                   </div>
-                )}
-              </div>
+                  <div className="border border-t-0 rounded-b p-3">
+                    {data.available.length === 0 ? (
+                      <p className="text-gray-500 text-sm">لا يوجد عمال متاحين في هذا التخصص</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {data.available.map(worker => (
+                          <label key={worker.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedWorkers.includes(worker.id)}
+                              onChange={() => toggleWorker(worker.id)}
+                              className="rounded"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{worker.name}</span>
+                                {worker.rating && (
+                                  <div className="flex items-center gap-1">
+                                    <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                                    <span className="text-xs text-gray-600">{worker.rating}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {worker.phone} | مشاريع: {worker.totalProjects || 0}
+                              </div>
+                            </div>
+                            <div className="text-sm">
+                              <span className="font-medium">{worker.dailyRate}</span> د.أ/يوم
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* ملخص العمال المختارين */}
+              {formData.selectedWorkers.length > 0 && (
+                <div className="mt-4 p-3 bg-blue-50 rounded">
+                  <p className="text-sm font-medium text-blue-800">
+                    تم اختيار {formData.selectedWorkers.length} عامل
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {formData.selectedWorkers.map(workerId => {
+                      const worker = workers.find(w => w.id === workerId);
+                      return (
+                        <span key={workerId} className="bg-white px-2 py-1 rounded text-xs">
+                          {worker?.name} ({worker?.specialization})
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -214,6 +273,13 @@ const SiteManagerTasksView = ({ currentUser, inventory = [], workers = [] }) => 
         </div>
       </div>
     );
+  };
+
+  // دالة لتحديث حالة المهمة اليومية
+  const updateDailyTaskStatus = (taskId, newStatus) => {
+    setDailyTasks(prev => prev.map(task => 
+      task.id === taskId ? { ...task, status: newStatus } : task
+    ));
   };
 
   return (
@@ -372,27 +438,60 @@ const SiteManagerTasksView = ({ currentUser, inventory = [], workers = [] }) => 
                   <div className="space-y-2">
                     {dailyTasks
                       .filter(dt => dt.weeklyTaskId === task.id)
-                      .map(dailyTask => (
-                        <div key={dailyTask.id} className="border rounded p-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium">{dailyTask.title}</p>
-                              <p className="text-sm text-gray-600">
-                                التاريخ: {dailyTask.date} | 
-                                العمال: {dailyTask.assignedWorkers.length} عامل
-                              </p>
+                      .map(dailyTask => {
+                        const assignedWorkersDetails = dailyTask.assignedWorkers.map(wId => 
+                          workers.find(w => w.id === wId)
+                        ).filter(Boolean);
+
+                        return (
+                          <div key={dailyTask.id} className="border rounded p-3">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="font-medium">{dailyTask.title}</p>
+                                <p className="text-sm text-gray-600">
+                                  التاريخ: {dailyTask.date}
+                                </p>
+                                <div className="mt-2">
+                                  <p className="text-xs text-gray-500 mb-1">العمال المكلفين:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {assignedWorkersDetails.map(worker => (
+                                      <span key={worker.id} className="bg-gray-100 px-2 py-1 rounded text-xs">
+                                        {worker.name} ({worker.specialization})
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                {dailyTask.notes && (
+                                  <p className="text-xs text-gray-500 mt-2">{dailyTask.notes}</p>
+                                )}
+                              </div>
+                              <div className="flex flex-col gap-2 items-end">
+                                <span className={`px-2 py-1 rounded text-xs ${
+                                  dailyTask.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  dailyTask.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {dailyTask.status === 'completed' ? 'مكتملة' :
+                                   dailyTask.status === 'in_progress' ? 'قيد التنفيذ' : 'معلقة'}
+                                </span>
+                                
+                                {dailyTask.status !== 'completed' && (
+                                  <select
+                                    value={dailyTask.status}
+                                    onChange={(e) => updateDailyTaskStatus(dailyTask.id, e.target.value)}
+                                    className="text-xs border rounded px-2 py-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <option value="pending">معلقة</option>
+                                    <option value="in_progress">قيد التنفيذ</option>
+                                    <option value="completed">مكتملة</option>
+                                  </select>
+                                )}
+                              </div>
                             </div>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              dailyTask.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              dailyTask.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {dailyTask.status === 'completed' ? 'مكتملة' :
-                               dailyTask.status === 'in_progress' ? 'قيد التنفيذ' : 'معلقة'}
-                            </span>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 </div>
               </div>

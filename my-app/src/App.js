@@ -14,6 +14,8 @@ import StatisticsView from './components/statistics/StatisticsView';
 import ProfileView from './components/profile/ProfileView';
 import WorkersManagement from './components/workers/WorkersManagement';
 import TasksView from './components/tasks/TasksView';
+import ProjectsManagement from './components/projects/ProjectsManagement';
+import DailyLogView from './components/tasks/DailyLogView';
 // Data
 import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans } from './data/mockData';
 
@@ -174,6 +176,19 @@ function App() {
 
         {currentView === 'profile' && (
           <ProfileView currentUser={currentUser} />
+        )}
+
+        {currentView === 'projects' && currentUser?.type === 'contractor' && (
+          <ProjectsManagement currentUser={currentUser} />
+        )}
+
+        {currentView === 'daily-log' && currentUser?.type === 'site_manager' && (
+          <DailyLogView 
+            currentUser={currentUser}
+            projects={projects}
+            workers={workers}
+            inventory={inventory}
+          />
         )}
 
         {currentView === 'workers' && (
