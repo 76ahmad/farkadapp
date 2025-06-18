@@ -54,12 +54,13 @@ const SiteManagerDashboard = ({ currentUser, projects = [], inventory = [], work
 
   // إحصائيات الحضور الأسبوعية
   const weeklyAttendance = [
-    { day: 'السبت', present: 22, absent: 3, late: 1 },
-    { day: 'الأحد', present: 24, absent: 1, late: 1 },
-    { day: 'الاثنين', present: 23, absent: 2, late: 1 },
+    { day: 'الجمعة', present: 22, absent: 3, late: 1 },
+    { day: 'الخميس', present: 24, absent: 1, late: 1 },
+    { day: 'الاربعاء', present: 23, absent: 2, late: 1 },
     { day: 'الثلاثاء', present: 25, absent: 1, late: 0 },
-    { day: 'الأربعاء', present: 24, absent: 1, late: 1 },
-    { day: 'الخميس', present: 23, absent: 2, late: 1 }
+    { day: 'الاثنين', present: 24, absent: 1, late: 1 },
+    { day: 'الأحد', present: 23, absent: 2, late: 1 }
+    
   ];
 
   // حساب الإحصائيات
