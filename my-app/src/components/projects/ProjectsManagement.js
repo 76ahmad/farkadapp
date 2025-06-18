@@ -58,6 +58,14 @@ const ProjectsManagement = ({ currentUser }) => {
   const [showAddProject, setShowAddProject] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [editingProject, setEditingProject] = useState(null);
+
+  // دالة تعديل المشروع
+  const updateProject = (projectId, updatedData) => {
+    setProjects(prev => prev.map(project => 
+      project.id === projectId ? { ...project, ...updatedData } : project
+    ));
+  };
 
   // حساب الإحصائيات
   const stats = {
@@ -78,6 +86,132 @@ const ProjectsManagement = ({ currentUser }) => {
     if (filterStatus === 'all') return true;
     return project.status === filterStatus;
   });
+
+  // مكون تعديل المشروع
+  const EditProjectForm = ({ project, onClose, onUpdate }) => {
+    const [formData, setFormData] = useState({
+      name: project.name,
+      description: project.description,
+      location: project.location,
+      expectedEndDate: project.expectedEndDate,
+      budget: project.budget,
+      status: project.status,
+      progress: project.progress
+    });
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      onUpdate(formData);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b">
+            <h3 className="text-xl font-bold">تعديل المشروع: {project.name}</h3>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">اسم المشروع</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                className="w-full p-2 border rounded-lg"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">الوصف</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                className="w-full p-2 border rounded-lg"
+                rows="3"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">الموقع</label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({...formData, location: e.target.value})}
+                className="w-full p-2 border rounded-lg"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">تاريخ التسليم المتوقع</label>
+              <input
+                type="date"
+                value={formData.expectedEndDate}
+                onChange={(e) => setFormData({...formData, expectedEndDate: e.target.value})}
+                className="w-full p-2 border rounded-lg"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">الميزانية</label>
+              <input
+                type="number"
+                value={formData.budget}
+                onChange={(e) => setFormData({...formData, budget: parseFloat(e.target.value)})}
+                className="w-full p-2 border rounded-lg"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">الحالة</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({...formData, status: e.target.value})}
+                className="w-full p-2 border rounded-lg"
+              >
+                <option value="active">نشط</option>
+                <option value="completed">مكتمل</option>
+                <option value="paused">متوقف</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">نسبة الإنجاز (%)</label>
+              <input
+                type="number"
+                value={formData.progress}
+                onChange={(e) => setFormData({...formData, progress: parseInt(e.target.value)})}
+                className="w-full p-2 border rounded-lg"
+                min="0"
+                max="100"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                حفظ التعديلات
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
 
   // مكون إضافة مشروع جديد
   const AddProjectForm = () => {
@@ -653,6 +787,7 @@ const ProjectsManagement = ({ currentUser }) => {
                     عرض التفاصيل
                   </button>
                   <button
+                    onClick={() => setEditingProject(project)}
                     className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                   >
                     <Edit2 className="h-4 w-4" />
@@ -666,6 +801,19 @@ const ProjectsManagement = ({ currentUser }) => {
 
       {/* نموذج إضافة مشروع */}
       {showAddProject && <AddProjectForm />}
+
+      {/* نموذج تعديل المشروع */}
+      {editingProject && (
+        <EditProjectForm 
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
+          onUpdate={(updatedData) => {
+            updateProject(editingProject.id, updatedData);
+            setEditingProject(null);
+            alert('تم تحديث المشروع بنجاح!');
+          }}
+        />
+      )}
 
       {/* عرض تفاصيل المشروع */}
       {selectedProject && (

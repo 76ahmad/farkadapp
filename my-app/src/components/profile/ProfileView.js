@@ -1,418 +1,312 @@
-// أنشئ ملف جديد: src/components/profile/ProfileView.js
-
 import React, { useState } from 'react';
 import { 
-  User, Mail, Phone, Briefcase, Calendar, MapPin, 
-  Edit2, Save, X, Camera, Shield, Bell, Eye, EyeOff 
+  User, Mail, Phone, Building, Calendar, 
+  Edit2, Save, X, Award, Briefcase, MapPin, DollarSign
 } from 'lucide-react';
 
 const ProfileView = ({ currentUser }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
-  
-  // بيانات المستخدم
-  const [userData, setUserData] = useState({
-    name: currentUser?.displayName || 'اسم المستخدم',
-    email: currentUser?.email || 'user@example.com',
-    phone: '079-123-4567',
-    role: currentUser?.type || 'contractor',
-    department: 'إدارة المشاريع',
-    location: 'عمان - الأردن',
-    joinDate: '2024-01-15',
-    bio: 'مدير مشاريع بخبرة 10 سنوات في مجال البناء والتشييد',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+  const [profile, setProfile] = useState({
+    displayName: currentUser?.displayName || '',
+    email: currentUser?.email || '',
+    phone: '0501234567',
+    address: 'الرياض، المملكة العربية السعودية',
+    joinDate: '2023-01-15',
+    specialization: currentUser?.specialization || 'بناء', // للعامل
+    experience: '5', // سنوات الخبرة
+    dailyRate: '250', // الأجر اليومي للعامل
+    emergencyContact: {
+      name: 'أحمد محمد',
+      phone: '0502345678',
+      relation: 'أخ'
+    }
   });
 
-  // إعدادات الإشعارات
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    smsNotifications: false,
-    lowStockAlerts: true,
-    taskReminders: true,
-    dailyReport: false,
-    weeklyReport: true
-  });
+  const specializations = [
+    'بناء',
+    'كهرباء',
+    'سباكة',
+    'حدادة',
+    'دهان',
+    'بلاط',
+    'نجارة',
+    'تكييف',
+    'عزل',
+    'زجاج وألمنيوم'
+  ];
 
-  // أسماء الأدوار بالعربية
-  const roleNames = {
+  const handleSave = () => {
+    // هنا يتم حفظ البيانات في قاعدة البيانات
+    console.log('Saving profile:', profile);
+    setIsEditing(false);
+    alert('تم حفظ التغييرات بنجاح!');
+  };
+
+  const userTypeLabels = {
     contractor: 'مقاول',
     architect: 'مهندس معماري',
     worker: 'عامل',
     site_manager: 'مدير موقع',
-    inspector: 'مفتش',
-    client: 'عميل'
-  };
-
-  // معالج تغيير البيانات
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setUserData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // معالج تغيير الإشعارات
-  const handleNotificationChange = (key) => {
-    setNotifications(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
-  // معالج رفع الصورة
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // حفظ التغييرات
-  const handleSave = () => {
-    // التحقق من كلمة المرور
-    if (userData.newPassword) {
-      if (userData.newPassword !== userData.confirmPassword) {
-        alert('كلمات المرور غير متطابقة!');
-        return;
-      }
-      if (userData.newPassword.length < 6) {
-        alert('كلمة المرور يجب أن تكون 6 أحرف على الأقل!');
-        return;
-      }
-    }
-    
-    alert('تم حفظ التغييرات بنجاح!');
-    setIsEditing(false);
-    // إعادة تعيين كلمات المرور
-    setUserData(prev => ({
-      ...prev,
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    }));
-  };
-
-  // إلغاء التعديل
-  const handleCancel = () => {
-    setIsEditing(false);
-    // إعادة تعيين كلمات المرور
-    setUserData(prev => ({
-      ...prev,
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    }));
+    inspector: 'مفتش/بلدية',
+    client: 'عميل/مالك'
   };
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
-      <h2 className="text-2xl font-bold">الملف الشخصي</h2>
+    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">الملف الشخصي</h2>
+        {!isEditing ? (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Edit2 className="h-5 w-5" />
+            تعديل
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+            >
+              <Save className="h-5 w-5" />
+              حفظ
+            </button>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                // إعادة البيانات الأصلية
+              }}
+              className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 flex items-center gap-2"
+            >
+              <X className="h-5 w-5" />
+              إلغاء
+            </button>
+          </div>
+        )}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* البطاقة الشخصية */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-center">
-              {/* صورة الملف الشخصي */}
-              <div className="relative inline-block">
-                <div className="w-32 h-32 rounded-full bg-gray-200 mx-auto overflow-hidden">
-                  {profileImage ? (
-                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <User className="h-16 w-16 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                {isEditing && (
-                  <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700">
-                    <Camera className="h-4 w-4" />
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleImageUpload}
-                      className="hidden" 
-                    />
-                  </label>
-                )}
-              </div>
-
-              {/* الاسم والدور */}
-              <h3 className="text-xl font-bold mt-4">{userData.name}</h3>
-              <p className="text-gray-600">{roleNames[userData.role]}</p>
-              <p className="text-sm text-gray-500">{userData.department}</p>
-
-              {/* الإحصائيات */}
-              <div className="mt-6 space-y-3">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                  <span className="text-gray-600">تاريخ الانضمام</span>
-                  <span className="font-medium">{new Date(userData.joinDate).toLocaleDateString('ar-EG')}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                  <span className="text-gray-600">المشاريع النشطة</span>
-                  <span className="font-medium text-blue-600">3</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                  <span className="text-gray-600">المهام المكتملة</span>
-                  <span className="font-medium text-green-600">24</span>
-                </div>
-              </div>
-            </div>
+      {/* البطاقة الرئيسية */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center gap-6 mb-6">
+          <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center">
+            <User className="h-12 w-12 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold">{profile.displayName}</h3>
+            <p className="text-gray-600">{userTypeLabels[currentUser?.type]}</p>
+            <p className="text-sm text-gray-500">انضم في {profile.joinDate}</p>
           </div>
         </div>
 
-        {/* معلومات الحساب */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* المعلومات الأساسية */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b flex justify-between items-center">
-              <h3 className="text-lg font-semibold">المعلومات الأساسية</h3>
-              {!isEditing ? (
-                <button 
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-                >
-                  <Edit2 className="h-4 w-4" />
-                  تعديل
-                </button>
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-700 border-b pb-2">المعلومات الأساسية</h4>
+            
+            <div>
+              <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <User className="h-4 w-4" />
+                الاسم الكامل
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={profile.displayName}
+                  onChange={(e) => setProfile({...profile, displayName: e.target.value})}
+                  className="w-full p-2 border rounded-lg"
+                />
               ) : (
-                <div className="flex gap-2">
-                  <button 
-                    onClick={handleSave}
-                    className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    <Save className="h-4 w-4" />
-                    حفظ
-                  </button>
-                  <button 
-                    onClick={handleCancel}
-                    className="flex items-center gap-1 px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500"
-                  >
-                    <X className="h-4 w-4" />
-                    إلغاء
-                  </button>
-                </div>
+                <p className="font-medium">{profile.displayName}</p>
               )}
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                    <User className="h-4 w-4" />
-                    الاسم الكامل
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={userData.name}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full p-2 border rounded ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                    <Mail className="h-4 w-4" />
-                    البريد الإلكتروني
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={userData.email}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full p-2 border rounded ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                    <Phone className="h-4 w-4" />
-                    رقم الهاتف
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={userData.phone}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full p-2 border rounded ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                    <MapPin className="h-4 w-4" />
-                    الموقع
-                  </label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={userData.location}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full p-2 border rounded ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <Briefcase className="h-4 w-4" />
-                  نبذة عني
-                </label>
-                <textarea
-                  name="bio"
-                  value={userData.bio}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  rows="3"
-                  className={`w-full p-2 border rounded ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
+            <div>
+              <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <Mail className="h-4 w-4" />
+                البريد الإلكتروني
+              </label>
+              {isEditing ? (
+                <input
+                  type="email"
+                  value={profile.email}
+                  onChange={(e) => setProfile({...profile, email: e.target.value})}
+                  className="w-full p-2 border rounded-lg"
                 />
-              </div>
+              ) : (
+                <p className="font-medium">{profile.email}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <Phone className="h-4 w-4" />
+                رقم الهاتف
+              </label>
+              {isEditing ? (
+                <input
+                  type="tel"
+                  value={profile.phone}
+                  onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                  className="w-full p-2 border rounded-lg"
+                />
+              ) : (
+                <p className="font-medium">{profile.phone}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <MapPin className="h-4 w-4" />
+                العنوان
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={profile.address}
+                  onChange={(e) => setProfile({...profile, address: e.target.value})}
+                  className="w-full p-2 border rounded-lg"
+                />
+              ) : (
+                <p className="font-medium">{profile.address}</p>
+              )}
             </div>
           </div>
 
-          {/* تغيير كلمة المرور */}
-          {isEditing && (
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  تغيير كلمة المرور
-                </h3>
-              </div>
-              <div className="p-6 space-y-4">
+          {/* معلومات العمل */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-700 border-b pb-2">معلومات العمل</h4>
+            
+            <div>
+              <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <Building className="h-4 w-4" />
+                نوع المستخدم
+              </label>
+              <p className="font-medium">{userTypeLabels[currentUser?.type]}</p>
+            </div>
+
+            {/* التخصص للعامل فقط */}
+            {currentUser?.type === 'worker' && (
+              <>
                 <div>
-                  <label className="text-sm text-gray-600 mb-1 block">كلمة المرور الحالية</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="currentPassword"
-                      value={userData.currentPassword}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded pl-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-2 top-2.5 text-gray-500"
+                  <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                    <Briefcase className="h-4 w-4" />
+                    التخصص
+                  </label>
+                  {isEditing ? (
+                    <select
+                      value={profile.specialization}
+                      onChange={(e) => setProfile({...profile, specialization: e.target.value})}
+                      className="w-full p-2 border rounded-lg"
                     >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
+                      {specializations.map(spec => (
+                        <option key={spec} value={spec}>{spec}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="font-medium">{profile.specialization}</p>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-600 mb-1 block">كلمة المرور الجديدة</label>
+                <div>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                    <Award className="h-4 w-4" />
+                    سنوات الخبرة
+                  </label>
+                  {isEditing ? (
                     <input
-                      type="password"
-                      name="newPassword"
-                      value={userData.newPassword}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded"
+                      type="number"
+                      value={profile.experience}
+                      onChange={(e) => setProfile({...profile, experience: e.target.value})}
+                      className="w-full p-2 border rounded-lg"
+                      min="0"
                     />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-600 mb-1 block">تأكيد كلمة المرور</label>
-                    <input
-                      type="password"
-                      name="confirmPassword"
-                      value={userData.confirmPassword}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded"
-                    />
-                  </div>
+                  ) : (
+                    <p className="font-medium">{profile.experience} سنوات</p>
+                  )}
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* إعدادات الإشعارات */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                إعدادات الإشعارات
-              </h3>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="space-y-3">
-                <label className="flex items-center justify-between p-3 hover:bg-gray-50 rounded cursor-pointer">
-                  <span>إشعارات البريد الإلكتروني</span>
-                  <input
-                    type="checkbox"
-                    checked={notifications.emailNotifications}
-                    onChange={() => handleNotificationChange('emailNotifications')}
-                    className="h-4 w-4 text-blue-600"
-                  />
-                </label>
+                <div>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                    <DollarSign className="h-4 w-4" />
+                    الأجر اليومي
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      value={profile.dailyRate}
+                      onChange={(e) => setProfile({...profile, dailyRate: e.target.value})}
+                      className="w-full p-2 border rounded-lg"
+                      min="0"
+                    />
+                  ) : (
+                    <p className="font-medium">{profile.dailyRate} ريال/يوم</p>
+                  )}
+                </div>
+              </>
+            )}
 
-                <label className="flex items-center justify-between p-3 hover:bg-gray-50 rounded cursor-pointer">
-                  <span>إشعارات الرسائل النصية</span>
-                  <input
-                    type="checkbox"
-                    checked={notifications.smsNotifications}
-                    onChange={() => handleNotificationChange('smsNotifications')}
-                    className="h-4 w-4 text-blue-600"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between p-3 hover:bg-gray-50 rounded cursor-pointer">
-                  <span>تنبيهات نقص المخزون</span>
-                  <input
-                    type="checkbox"
-                    checked={notifications.lowStockAlerts}
-                    onChange={() => handleNotificationChange('lowStockAlerts')}
-                    className="h-4 w-4 text-blue-600"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between p-3 hover:bg-gray-50 rounded cursor-pointer">
-                  <span>تذكيرات المهام</span>
-                  <input
-                    type="checkbox"
-                    checked={notifications.taskReminders}
-                    onChange={() => handleNotificationChange('taskReminders')}
-                    className="h-4 w-4 text-blue-600"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between p-3 hover:bg-gray-50 rounded cursor-pointer">
-                  <span>التقرير اليومي</span>
-                  <input
-                    type="checkbox"
-                    checked={notifications.dailyReport}
-                    onChange={() => handleNotificationChange('dailyReport')}
-                    className="h-4 w-4 text-blue-600"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between p-3 hover:bg-gray-50 rounded cursor-pointer">
-                  <span>التقرير الأسبوعي</span>
-                  <input
-                    type="checkbox"
-                    checked={notifications.weeklyReport}
-                    onChange={() => handleNotificationChange('weeklyReport')}
-                    className="h-4 w-4 text-blue-600"
-                  />
-                </label>
-              </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <Calendar className="h-4 w-4" />
+                تاريخ الانضمام
+              </label>
+              <p className="font-medium">{profile.joinDate}</p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* جهة اتصال الطوارئ */}
+      {currentUser?.type === 'worker' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">جهة اتصال الطوارئ</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm text-gray-600 mb-1 block">الاسم</label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={profile.emergencyContact.name}
+                  onChange={(e) => setProfile({...profile, emergencyContact: {...profile.emergencyContact, name: e.target.value}})}
+                  className="w-full p-2 border rounded-lg"
+                />
+              ) : (
+                <p className="font-medium">{profile.emergencyContact.name}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-600 mb-1 block">رقم الهاتف</label>
+              {isEditing ? (
+                <input
+                  type="tel"
+                  value={profile.emergencyContact.phone}
+                  onChange={(e) => setProfile({...profile, emergencyContact: {...profile.emergencyContact, phone: e.target.value}})}
+                  className="w-full p-2 border rounded-lg"
+                />
+              ) : (
+                <p className="font-medium">{profile.emergencyContact.phone}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-600 mb-1 block">صلة القرابة</label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={profile.emergencyContact.relation}
+                  onChange={(e) => setProfile({...profile, emergencyContact: {...profile.emergencyContact, relation: e.target.value}})}
+                  className="w-full p-2 border rounded-lg"
+                />
+              ) : (
+                <p className="font-medium">{profile.emergencyContact.relation}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -97,13 +97,15 @@ const Header = ({ currentUser, onViewChange, onLogout, lowStockCount }) => {
           </button>
         )}
         
-        {/* للجميع */}
-        <button 
-          onClick={() => onViewChange('statistics')} 
-          className="hover:underline flex items-center gap-1"
-        >
-          📊 الإحصائيات
-        </button>
+        {/* للمقاول فقط - الإحصائيات */}
+        {currentUser?.type === 'contractor' && (
+          <button 
+            onClick={() => onViewChange('statistics')} 
+            className="hover:underline flex items-center gap-1"
+          >
+            📊 الإحصائيات
+          </button>
+        )}
         
         <button 
           onClick={() => onViewChange('profile')} 

@@ -9,6 +9,7 @@ import ContractorDashboard from './components/dashboards/ContractorDashboard';
 import ArchitectDashboard from './components/dashboards/ArchitectDashboard';
 import WorkerDashboard from './components/dashboards/WorkerDashboard';
 import DefaultDashboard from './components/dashboards/DefaultDashboard';
+import SiteManagerDashboard from './components/dashboards/SiteMangerDashboard'; // مضاف حديثًا
 import InventoryView from './components/inventory/InventoryView';
 import StatisticsView from './components/statistics/StatisticsView';
 import ProfileView from './components/profile/ProfileView';
@@ -16,6 +17,7 @@ import WorkersManagement from './components/workers/WorkersManagement';
 import TasksView from './components/tasks/TasksView';
 import ProjectsManagement from './components/projects/ProjectsManagement';
 import DailyLogView from './components/tasks/DailyLogView';
+
 // Data
 import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans } from './data/mockData';
 
@@ -27,8 +29,7 @@ function App() {
   const [projects] = useState(mockProjects);
   const [workers] = useState(mockWorkers);
   const [plans] = useState(mockPlans);
-  
-  // state للمهام
+
   const [tasks] = useState([
     {
       id: 1,
@@ -76,7 +77,6 @@ function App() {
     }
   ]);
 
-  // دالة إضافة سجل للحركة
   const addInventoryLog = (itemId, itemName, action, quantity, previousStock, newStock, reason) => {
     const newLog = {
       id: Date.now(),
@@ -109,7 +109,6 @@ function App() {
 
   const lowStockCount = inventory.filter(item => item.currentStock <= item.minStock).length;
 
-  // عرض صفحة تسجيل الدخول إذا لم يكن هناك مستخدم
   if (!currentUser) {
     return <LoginView onLogin={handleLogin} />;
   }
@@ -122,7 +121,7 @@ function App() {
         onLogout={handleLogout}
         lowStockCount={lowStockCount}
       />
-      
+
       <main className="flex-1">
         {currentView === 'dashboard' && (
           <>
@@ -141,12 +140,20 @@ function App() {
                 currentUser={currentUser}
               />
             )}
-            {!['contractor', 'architect', 'worker'].includes(currentUser.type) && (
+            {currentUser.type === 'site_manager' && (
+              <SiteManagerDashboard 
+                currentUser={currentUser}
+                projects={projects}
+                inventory={inventory}
+                workers={workers}
+              />
+            )}
+            {!['contractor', 'architect', 'worker', 'site_manager'].includes(currentUser.type) && (
               <DefaultDashboard currentUser={currentUser} />
             )}
           </>
         )}
-        
+
         {currentView === 'inventory' && (
           <InventoryView 
             inventory={inventory}
@@ -156,7 +163,7 @@ function App() {
             currentUser={currentUser}
           />
         )}
-        
+
         {currentView === 'tasks' && (
           <TasksView 
             currentUser={currentUser}
@@ -164,7 +171,7 @@ function App() {
             workers={workers}
           />
         )}
-        
+
         {currentView === 'statistics' && (
           <StatisticsView 
             inventory={inventory}
@@ -195,7 +202,7 @@ function App() {
           <WorkersManagement currentUser={currentUser} />
         )}
       </main>
-      
+
       <Footer />
     </div>
   );
