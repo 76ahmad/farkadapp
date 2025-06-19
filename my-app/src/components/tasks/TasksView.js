@@ -8,59 +8,7 @@ import {
 import SiteManagerTasksView from './SiteManagerTasksView';
 import WeeklyTasksView from './WeeklyTasksView';
 
-const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
-  // نقل جميع الـ hooks إلى أعلى المكون - قبل أي شروط
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: 'طلب حديد تسليح للمشروع',
-      description: 'طلب 5 طن حديد من المورد الرئيسي',
-      priority: 'high',
-      dueDate: '2024-06-20',
-      completed: false,
-      project: 'فيلا الأحمد',
-      createdBy: 'المقاول',
-      createdAt: '2024-06-15',
-      assignedTo: 'worker' // العامل
-    },
-    {
-      id: 2,
-      title: 'فحص جودة البلاط',
-      description: 'التأكد من جودة البلاط قبل التركيب',
-      priority: 'medium',
-      dueDate: '2024-06-18',
-      completed: true,
-      project: 'فيلا الأحمد',
-      createdBy: 'مدير الموقع',
-      createdAt: '2024-06-14',
-      assignedTo: 'worker'
-    },
-    {
-      id: 3,
-      title: 'تركيب البلاط في الصالة',
-      description: 'تركيب بلاط البورسلين في صالة الاستقبال',
-      priority: 'high',
-      dueDate: '2024-06-22',
-      completed: false,
-      project: 'فيلا الأحمد',
-      createdBy: 'مدير الموقع',
-      createdAt: '2024-06-16',
-      assignedTo: 'worker'
-    },
-    {
-      id: 4,
-      title: 'دهان الجدران الخارجية',
-      description: 'دهان الواجهة الأمامية للمبنى',
-      priority: 'medium',
-      dueDate: '2024-06-25',
-      completed: false,
-      project: 'فيلا الأحمد',
-      createdBy: 'المقاول',
-      createdAt: '2024-06-17',
-      assignedTo: 'worker'
-    }
-  ]);
-
+const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], taskActions }) => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -76,8 +24,8 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
 
   // فلترة المهام
   const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = task.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         task.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = filterStatus === 'all' || 
                          (filterStatus === 'completed' && task.completed) ||
@@ -89,16 +37,28 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
   });
 
   // تبديل حالة المهمة
-  const toggleTask = (taskId) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    ));
+  const toggleTask = async (taskId) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task && taskActions) {
+      try {
+        await taskActions.updateTask(taskId, { completed: !task.completed });
+      } catch (error) {
+        console.error('Error updating task:', error);
+        alert('حدث خطأ أثناء تحديث المهمة');
+      }
+    }
   };
 
   // حذف مهمة
-  const deleteTask = (taskId) => {
+  const deleteTask = async (taskId) => {
     if (window.confirm('هل أنت متأكد من حذف هذه المهمة؟')) {
-      setTasks(prev => prev.filter(task => task.id !== taskId));
+      try {
+        await taskActions.deleteTask(taskId);
+        alert('تم حذف المهمة بنجاح!');
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        alert('حدث خطأ أثناء حذف المهمة');
+      }
     }
   };
 
@@ -124,10 +84,11 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
       description: '',
       priority: 'medium',
       dueDate: '',
-      project: 'فيلا الأحمد'
+      project: 'فيلا الأحمد',
+      assignedTo: 'worker'
     });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
       
       if (!formData.title || !formData.dueDate) {
@@ -135,24 +96,20 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
         return;
       }
 
-      const newTask = {
-        id: Date.now(),
-        ...formData,
-        completed: false,
-        createdBy: currentUser?.displayName || 'مستخدم',
-        createdAt: new Date().toISOString().split('T')[0],
-        assignedTo: currentUser?.type || 'user'
-      };
-
-      setTasks(prev => [newTask, ...prev]);
-      setShowAddTask(false);
-      setFormData({
-        title: '',
-        description: '',
-        priority: 'medium',
-        dueDate: '',
-        project: 'فيلا الأحمد'
-      });
+      try {
+        await taskActions.addTask({
+          ...formData,
+          completed: false,
+          createdBy: currentUser?.displayName || 'مستخدم',
+          createdAt: new Date().toISOString().split('T')[0]
+        });
+        
+        setShowAddTask(false);
+        alert('تم إضافة المهمة بنجاح!');
+      } catch (error) {
+        console.error('Error adding task:', error);
+        alert('حدث خطأ أثناء إضافة المهمة');
+      }
     };
 
     return (
@@ -204,6 +161,16 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
               className="w-full p-2 border rounded"
             />
             
+            <select
+              value={formData.assignedTo}
+              onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
+              className="w-full p-2 border rounded"
+            >
+              <option value="worker">عامل</option>
+              <option value="site_manager">مدير الموقع</option>
+              <option value="contractor">المقاول</option>
+            </select>
+            
             <div className="flex justify-end gap-2">
               <button
                 type="button"
@@ -232,6 +199,8 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
         currentUser={currentUser} 
         inventory={inventory}
         workers={workers}
+        tasks={tasks}
+        taskActions={taskActions}
         isContractor={true}
       />
     );
@@ -244,6 +213,8 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
         currentUser={currentUser} 
         inventory={inventory}
         workers={workers}
+        tasks={tasks}
+        taskActions={taskActions}
       />
     );
   }
@@ -253,8 +224,8 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
     // فلترة المهام المخصصة للعامل فقط
     const workerTasks = tasks.filter(task => task.assignedTo === 'worker');
     const workerFilteredTasks = workerTasks.filter(task => {
-      const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           task.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = task.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           task.description?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = filterStatus === 'all' || 
                            (filterStatus === 'completed' && task.completed) ||

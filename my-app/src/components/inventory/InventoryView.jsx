@@ -1,636 +1,640 @@
+// InventoryView.js - Updated for Firebase integration
 import React, { useState } from 'react';
-import { Package, AlertTriangle, TrendingUp, Users, Plus, FileText, Search, Printer, FileSpreadsheet } from 'lucide-react';
-import { getUserPermissions } from '../../utils/permissions';
-import AddItemForm from './AddItemForm';
-import InventoryLogView from './InventoryLogView';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
-const InventoryView = ({ inventory, setInventory, inventoryLog, addInventoryLog, currentUser }) => {
-  const [showAddItemForm, setShowAddItemForm] = useState(false);
-  const [showInventoryLog, setShowInventoryLog] = useState(false);
-  const permissions = getUserPermissions(currentUser?.type);
-  // أضف هذه الأسطر الجديدة للبحث والفلترة
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('الكل');
-  const [filterStatus, setFilterStatus] = useState('الكل');
-  const [sortBy, setSortBy] = useState('name');
+import { Plus, Search, AlertCircle, Package, TrendingUp, TrendingDown, History } from 'lucide-react';
+
+const InventoryView = ({ 
+  inventory, 
+  inventoryActions, 
+  inventoryLog, 
+  addInventoryLog, 
+  currentUser 
+}) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [showLog, setShowLog] = useState(false);
   
-  // الفئات المتاحة
-  const categories = ['الكل', 'حديد', 'إسمنت', 'رمل', 'تشطيبات', 'كهرباء', 'سباكة', 'أدوات', 'مواد عازلة'];
-  
-// فلترة وترتيب المخزون
-  const filteredInventory = inventory
-    .filter(item => {
-      // فلترة بالبحث
-      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.location.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // فلترة بالفئة
-      const matchesCategory = filterCategory === 'الكل' || item.category === filterCategory;
-      
-      // فلترة بالحالة
-      let matchesStatus = true;
-      if (filterStatus === 'منخفض') {
-        matchesStatus = item.currentStock <= item.minStock && item.currentStock > 0;
-      } else if (filterStatus === 'نفد') {
-        matchesStatus = item.currentStock === 0;
-      } else if (filterStatus === 'طبيعي') {
-        matchesStatus = item.currentStock > item.minStock;
-      }
-      
-      return matchesSearch && matchesCategory && matchesStatus;
-    })
-    .sort((a, b) => {
-      // ترتيب النتائج
-      switch(sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name, 'ar');
-        case 'quantity':
-          return a.currentStock - b.currentStock;
-        case 'value':
-          return (b.currentStock * b.unitPrice) - (a.currentStock * a.unitPrice);
-        default:
-          return 0;
-      }
-    });
-
-  const totalItems = inventory.length;
-  const lowStockItems = inventory.filter(item => item.currentStock <= item.minStock);
-  const totalValue = inventory.reduce((sum, item) => sum + (item.currentStock * item.unitPrice), 0);
-
-  // دالة تعديل الكمية مع سجل
-  const adjustQuantity = (itemId, change, reason = '') => {
-    if (!permissions.canEdit) {
-      alert('ليس لديك صلاحية لتعديل الكميات');
-      return;
-    }
-
-    setInventory(prev => prev.map(item => {
-      if (item.id === itemId) {
-        const previousStock = item.currentStock;
-        const newStock = Math.max(0, item.currentStock + change);
-        
-        // إضافة السجل
-        if (newStock !== previousStock) {
-          const action = change > 0 ? 'إضافة' : 'استهلاك';
-          const logReason = reason || (change > 0 ? 'إضافة للمخزون' : 'استهلاك من المخزون');
-          addInventoryLog(itemId, item.name, action, Math.abs(change), previousStock, newStock, logReason);
-        }
-        
-        return { ...item, currentStock: newStock };
-      }
-      return item;
-    }));
-  };
-
-  // دالة حذف مادة مع سجل
-  const deleteItem = (itemId) => {
-    if (!permissions.canDelete) {
-      alert('ليس لديك صلاحية لحذف المواد');
-      return;
-    }
-
-    const item = inventory.find(i => i.id === itemId);
-    if (!item) return;
-
-    if (window.confirm(`هل أنت متأكد من حذف "${item.name}"؟\nهذا الإجراء لا يمكن التراجع عنه.`)) {
-      // إضافة سجل الحذف
-      addInventoryLog(itemId, item.name, 'حذف', item.currentStock, item.currentStock, 0, 'حذف المادة من النظام');
-      
-      // حذف المادة
-      setInventory(prev => prev.filter(item => item.id !== itemId));
-    }
-  };
-
-  // دالة إضافة مادة جديدة
-  const handleAddItem = (newItem) => {
-    setInventory(prev => [...prev, newItem]);
-    
-    // إضافة سجل إنشاء المادة
-    addInventoryLog(
-      newItem.id, 
-      newItem.name, 
-      'إنشاء', 
-      newItem.currentStock, 
-      0, 
-      newItem.currentStock, 
-      'إضافة مادة جديدة للنظام'
-    );
-
-    setShowAddItemForm(false);
-  };
-const handlePrint = () => {
-  // إنشاء نافذة طباعة جديدة
-  const printWindow = window.open('', '_blank');
-  
-  // إنشاء محتوى الطباعة
-  const printContent = `
-    <!DOCTYPE html>
-    <html dir="rtl">
-    <head>
-      <title>تقرير المخزون - ${new Date().toLocaleDateString('ar-EG')}</title>
-      <style>
-        body { 
-          font-family: Arial, sans-serif; 
-          direction: rtl; 
-          padding: 20px;
-        }
-        h1, h2 { text-align: center; color: #333; }
-        table { 
-          width: 100%; 
-          border-collapse: collapse; 
-          margin-top: 20px;
-        }
-        th, td { 
-          border: 1px solid #ddd; 
-          padding: 8px; 
-          text-align: right; 
-        }
-        th { 
-          background-color: #f2f2f2; 
-          font-weight: bold; 
-        }
-        .low-stock { color: #dc2626; font-weight: bold; }
-        .out-stock { color: #991b1b; font-weight: bold; }
-        .normal-stock { color: #16a34a; }
-        .summary { 
-          margin: 20px 0; 
-          padding: 15px; 
-          background-color: #f8f9fa; 
-          border-radius: 5px;
-        }
-        .footer { 
-          margin-top: 30px; 
-          text-align: center; 
-          color: #666; 
-        }
-        @media print {
-          button { display: none; }
-        }
-      </style>
-    </head>
-    <body>
-      <h1>منصة البناء الذكي</h1>
-      <h2>تقرير المخزون - ${new Date().toLocaleDateString('ar-EG')}</h2>
-      
-      <div class="summary">
-        <p><strong>إجمالي المواد:</strong> ${filteredInventory.length}</p>
-        <p><strong>قيمة المخزون:</strong> ${totalValue.toLocaleString()} د.أ</p>
-        <p><strong>مواد منخفضة:</strong> ${lowStockItems.length}</p>
-      </div>
-      
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>اسم المادة</th>
-            <th>الفئة</th>
-            <th>الكمية</th>
-            <th>الوحدة</th>
-            <th>الحد الأدنى</th>
-            <th>سعر الوحدة</th>
-            <th>القيمة الإجمالية</th>
-            <th>المورد</th>
-            <th>الموقع</th>
-            <th>الحالة</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${filteredInventory.map((item, index) => `
-            <tr>
-              <td>${index + 1}</td>
-              <td>${item.name}</td>
-              <td>${item.category}</td>
-              <td class="${
-                item.currentStock === 0 ? 'out-stock' : 
-                item.currentStock <= item.minStock ? 'low-stock' : 
-                'normal-stock'
-              }">${item.currentStock}</td>
-              <td>${item.unit}</td>
-              <td>${item.minStock}</td>
-              <td>${item.unitPrice} د.أ</td>
-              <td>${(item.currentStock * item.unitPrice).toLocaleString()} د.أ</td>
-              <td>${item.supplier}</td>
-              <td>${item.location}</td>
-              <td>${
-                item.currentStock === 0 ? 'نفد' :
-                item.currentStock <= item.minStock ? 'منخفض' : 
-                'طبيعي'
-              }</td>
-            </tr>
-          `).join('')}
-        </tbody>
-        <tfoot>
-          <tr style="font-weight: bold;">
-            <td colspan="7">المجموع</td>
-            <td>${totalValue.toLocaleString()} د.أ</td>
-            <td colspan="3"></td>
-          </tr>
-        </tfoot>
-      </table>
-      
-      <div class="footer">
-        <p>تم الطباعة بواسطة: ${currentUser?.displayName}</p>
-        <p>التاريخ والوقت: ${new Date().toLocaleString('ar-EG')}</p>
-      </div>
-    </body>
-    </html>
-  `;
-  
-  // كتابة المحتوى وطباعته
-  printWindow.document.write(printContent);
-  printWindow.document.close();
-  
-  // انتظار تحميل المحتوى ثم طباعة
-  printWindow.onload = () => {
-    printWindow.print();
-    printWindow.onafterprint = () => {
-      printWindow.close();
-    };
-  };
-};
-
-const handleExportExcel = () => {
-  // تحضير البيانات للتصدير
-  const exportData = filteredInventory.map((item, index) => ({
-    'الرقم': index + 1,
-    'اسم المادة': item.name,
-    'الفئة': item.category,
-    'الكمية الحالية': item.currentStock,
-    'الوحدة': item.unit,
-    'الحد الأدنى': item.minStock,
-    'الحد الأقصى': item.maxStock,
-    'سعر الوحدة': item.unitPrice,
-    'القيمة الإجمالية': item.currentStock * item.unitPrice,
-    'المورد': item.supplier,
-    'موقع التخزين': item.location,
-    'الحالة': item.currentStock === 0 ? 'نفد' :
-              item.currentStock <= item.minStock ? 'منخفض' : 
-              'طبيعي'
-  }));
-  
-  // إضافة صف المجموع
-  exportData.push({
-    'الرقم': '',
-    'اسم المادة': 'المجموع الكلي',
-    'الفئة': '',
-    'الكمية الحالية': '',
-    'الوحدة': '',
-    'الحد الأدنى': '',
-    'الحد الأقصى': '',
-    'سعر الوحدة': '',
-    'القيمة الإجمالية': totalValue,
-    'المورد': '',
-    'موقع التخزين': '',
-    'الحالة': ''
+  // Form states
+  const [formData, setFormData] = useState({
+    name: '',
+    category: 'خرسانة',
+    unit: 'متر مكعب',
+    currentStock: 0,
+    minStock: 10,
+    location: '',
+    supplier: '',
+    lastPrice: 0
   });
-  
-  // إنشاء ورقة عمل
-  const ws = XLSX.utils.json_to_sheet(exportData);
-  
-  // تنسيق عرض الأعمدة
-  const colWidths = [
-    { wch: 8 },  // الرقم
-    { wch: 25 }, // اسم المادة
-    { wch: 15 }, // الفئة
-    { wch: 12 }, // الكمية
-    { wch: 10 }, // الوحدة
-    { wch: 12 }, // الحد الأدنى
-    { wch: 12 }, // الحد الأقصى
-    { wch: 12 }, // سعر الوحدة
-    { wch: 15 }, // القيمة
-    { wch: 20 }, // المورد
-    { wch: 20 }, // الموقع
-    { wch: 10 }  // الحالة
-  ];
-  ws['!cols'] = colWidths;
-  
-  // إنشاء الملف
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'المخزون');
-  
-  // حفظ الملف
-  const fileName = `تقرير_المخزون_${new Date().toLocaleDateString('ar-EG').replace(/\//g, '-')}.xlsx`;
-  XLSX.writeFile(wb, fileName);
-};
 
+  // Stock adjustment states
+  const [adjustmentData, setAdjustmentData] = useState({
+    itemId: '',
+    action: 'add',
+    quantity: 0,
+    reason: ''
+  });
+
+  const categories = ['خرسانة', 'حديد', 'أسمنت', 'طوب', 'رمل', 'زلط', 'أخرى'];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      if (editingItem) {
+        // Update existing item
+        await inventoryActions.updateItem(editingItem.id, formData);
+        
+        // Log the update
+        await addInventoryLog(
+          editingItem.id,
+          formData.name,
+          'تحديث',
+          0,
+          editingItem.currentStock,
+          formData.currentStock,
+          'تحديث بيانات الصنف'
+        );
+      } else {
+        // Add new item
+        await inventoryActions.addItem(formData);
+        
+        // Log the addition
+        await addInventoryLog(
+          'new',
+          formData.name,
+          'إضافة',
+          formData.currentStock,
+          0,
+          formData.currentStock,
+          'إضافة صنف جديد'
+        );
+      }
+      
+      resetForm();
+    } catch (error) {
+      console.error('Error saving inventory item:', error);
+      alert('حدث خطأ أثناء حفظ البيانات');
+    }
+  };
+
+  const handleStockAdjustment = async (e) => {
+    e.preventDefault();
+    
+    const item = inventory.find(i => i.id === adjustmentData.itemId);
+    if (!item) return;
+    
+    const quantity = parseInt(adjustmentData.quantity);
+    const newStock = adjustmentData.action === 'add' 
+      ? item.currentStock + quantity 
+      : item.currentStock - quantity;
+    
+    if (newStock < 0) {
+      alert('لا يمكن أن يكون المخزون سالبًا');
+      return;
+    }
+    
+    try {
+      // Update stock in Firebase
+      await inventoryActions.updateItem(item.id, { currentStock: newStock });
+      
+      // Log the adjustment
+      await addInventoryLog(
+        item.id,
+        item.name,
+        adjustmentData.action === 'add' ? 'إضافة' : 'سحب',
+        quantity,
+        item.currentStock,
+        newStock,
+        adjustmentData.reason
+      );
+      
+      // Reset adjustment form
+      setAdjustmentData({
+        itemId: '',
+        action: 'add',
+        quantity: 0,
+        reason: ''
+      });
+    } catch (error) {
+      console.error('Error adjusting stock:', error);
+      alert('حدث خطأ أثناء تعديل المخزون');
+    }
+  };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setFormData({
+      name: item.name,
+      category: item.category,
+      unit: item.unit,
+      currentStock: item.currentStock,
+      minStock: item.minStock,
+      location: item.location || '',
+      supplier: item.supplier || '',
+      lastPrice: item.lastPrice || 0
+    });
+    setShowAddForm(true);
+  };
+
+  const handleDelete = async (item) => {
+    if (window.confirm(`هل أنت متأكد من حذف ${item.name}؟`)) {
+      try {
+        await inventoryActions.deleteItem(item.id);
+        
+        // Log the deletion
+        await addInventoryLog(
+          item.id,
+          item.name,
+          'حذف',
+          item.currentStock,
+          item.currentStock,
+          0,
+          'حذف الصنف من المخزون'
+        );
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        alert('حدث خطأ أثناء حذف الصنف');
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      category: 'خرسانة',
+      unit: 'متر مكعب',
+      currentStock: 0,
+      minStock: 10,
+      location: '',
+      supplier: '',
+      lastPrice: 0
+    });
+    setEditingItem(null);
+    setShowAddForm(false);
+  };
+
+  // Filter inventory based on search and category
+  const filteredInventory = inventory.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         item.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Calculate statistics
+  const totalItems = inventory.length;
+  const lowStockItems = inventory.filter(item => item.currentStock <= item.minStock).length;
+  const totalValue = inventory.reduce((sum, item) => sum + (item.currentStock * (item.lastPrice || 0)), 0);
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
-      {/* عرض الصلاحيات */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="font-medium text-blue-800">صلاحياتك في المخزون</h4>
-            <p className="text-sm text-blue-600">الدور: {permissions.role}</p>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-gray-800">إدارة المخزون</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowLog(!showLog)}
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
+            >
+              <History className="w-5 h-5" />
+              سجل الحركات
+            </button>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              إضافة صنف جديد
+            </button>
           </div>
-          <div className="flex gap-2 text-xs">
-            <span className={`px-2 py-1 rounded ${permissions.canView ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {permissions.canView ? '✓ عرض' : '✗ عرض'}
-            </span>
-            <span className={`px-2 py-1 rounded ${permissions.canAdd ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {permissions.canAdd ? '✓ إضافة' : '✗ إضافة'}
-            </span>
-            <span className={`px-2 py-1 rounded ${permissions.canEdit ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {permissions.canEdit ? '✓ تعديل' : '✗ تعديل'}
-            </span>
-            <span className={`px-2 py-1 rounded ${permissions.canDelete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {permissions.canDelete ? '✓ حذف' : '✗ حذف'}
-            </span>
+        </div>
+
+        {/* Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">إجمالي الأصناف</p>
+                <p className="text-2xl font-bold text-blue-600">{totalItems}</p>
+              </div>
+              <Package className="w-8 h-8 text-blue-600" />
+            </div>
+          </div>
+          
+          <div className="bg-red-50 p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">نواقص المخزون</p>
+                <p className="text-2xl font-bold text-red-600">{lowStockItems}</p>
+              </div>
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+          </div>
+          
+          <div className="bg-green-50 p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">قيمة المخزون</p>
+                <p className="text-2xl font-bold text-green-600">{totalValue.toLocaleString()} جنيه</p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-green-600" />
+            </div>
           </div>
         </div>
       </div>
 
-      {!permissions.canView ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
-          <h3 className="text-lg font-bold text-red-800 mb-2">غير مصرح لك بالوصول</h3>
-          <p className="text-red-600">ليس لديك صلاحية لعرض المخزون</p>
-        </div>
-      ) : (
-        <>
-          {/* الإحصائيات */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-blue-600 text-white p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold">إجمالي المواد</h3>
-                  <p className="text-2xl font-bold">{totalItems}</p>
-                </div>
-                <Package className="h-8 w-8" />
-              </div>
-            </div>
-            <div className="bg-red-600 text-white p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold">مواد منخفضة المخزون</h3>
-                  <p className="text-2xl font-bold">{lowStockItems.length}</p>
-                </div>
-                <AlertTriangle className="h-8 w-8" />
-              </div>
-            </div>
-            <div className="bg-green-600 text-white p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold">قيمة المخزون</h3>
-                  <p className="text-xl font-bold">{totalValue.toLocaleString()} د.أ</p>
-                </div>
-                <TrendingUp className="h-8 w-8" />
-              </div>
-            </div>
-            <div className="bg-purple-600 text-white p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold">حركات اليوم</h3>
-                  <p className="text-xl font-bold">
-                    {inventoryLog.filter(log => log.date === new Date().toLocaleDateString('ar-EG')).length}
-                  </p>
-                </div>
-                <Users className="h-8 w-8" />
-              </div>
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute right-3 top-3 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="البحث عن صنف..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
           </div>
+          
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">جميع الفئات</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-         {/* قسم البحث والفلترة */}
-          <div className="bg-white rounded-lg shadow p-4 mb-6">
-            <h3 className="text-lg font-semibold mb-4">بحث وفلترة</h3>
+      {/* Inventory Table */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  الصنف
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  الفئة
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  المخزون الحالي
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  الحد الأدنى
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  الموقع
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  الحالة
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  الإجراءات
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredInventory.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                      <div className="text-sm text-gray-500">{item.unit}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.category}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.currentStock}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.minStock}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.location || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {item.currentStock <= item.minStock ? (
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                        نقص في المخزون
+                      </span>
+                    ) : (
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        متوفر
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleEdit(item)}
+                      className="text-blue-600 hover:text-blue-900 ml-3"
+                    >
+                      تعديل
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      حذف
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Stock Adjustment Form */}
+      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+        <h3 className="text-lg font-semibold mb-4">تعديل المخزون</h3>
+        <form onSubmit={handleStockAdjustment} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <select
+            value={adjustmentData.itemId}
+            onChange={(e) => setAdjustmentData({...adjustmentData, itemId: e.target.value})}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="">اختر الصنف</option>
+            {inventory.map(item => (
+              <option key={item.id} value={item.id}>{item.name}</option>
+            ))}
+          </select>
+          
+          <select
+            value={adjustmentData.action}
+            onChange={(e) => setAdjustmentData({...adjustmentData, action: e.target.value})}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="add">إضافة</option>
+            <option value="withdraw">سحب</option>
+          </select>
+          
+          <input
+            type="number"
+            placeholder="الكمية"
+            value={adjustmentData.quantity}
+            onChange={(e) => setAdjustmentData({...adjustmentData, quantity: e.target.value})}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            required
+            min="1"
+          />
+          
+          <input
+            type="text"
+            placeholder="السبب"
+            value={adjustmentData.reason}
+            onChange={(e) => setAdjustmentData({...adjustmentData, reason: e.target.value})}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          
+          <button
+            type="submit"
+            className="md:col-span-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            تنفيذ التعديل
+          </button>
+        </form>
+      </div>
+
+      {/* Add/Edit Form Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
+              {editingItem ? 'تعديل الصنف' : 'إضافة صنف جديد'}
+            </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* صندوق البحث */}
-              <div className="relative">
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  اسم الصنف
+                </label>
                 <input
                   type="text"
-                  placeholder="ابحث بالاسم، المورد، الموقع..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full p-2 pl-8 border rounded"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
                 />
-                <Search className="absolute right-2 top-3 h-4 w-4 text-gray-400" />
               </div>
               
-              {/* فلترة بالفئة */}
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full p-2 border rounded"
-              >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  الفئة
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
               
-              {/* فلترة بالحالة */}
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full p-2 border rounded"
-              >
-                <option value="الكل">كل الحالات</option>
-                <option value="طبيعي">طبيعي</option>
-                <option value="منخفض">منخفض</option>
-                <option value="نفد">نفد</option>
-              </select>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  الوحدة
+                </label>
+                <input
+                  type="text"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
               
-              {/* ترتيب حسب */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full p-2 border rounded"
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    المخزون الحالي
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.currentStock}
+                    onChange={(e) => setFormData({...formData, currentStock: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    الحد الأدنى
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.minStock}
+                    onChange={(e) => setFormData({...formData, minStock: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  الموقع
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  المورد
+                </label>
+                <input
+                  type="text"
+                  value={formData.supplier}
+                  onChange={(e) => setFormData({...formData, supplier: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  آخر سعر
+                </label>
+                <input
+                  type="number"
+                  value={formData.lastPrice}
+                  onChange={(e) => setFormData({...formData, lastPrice: parseFloat(e.target.value) || 0})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {editingItem ? 'حفظ التعديلات' : 'إضافة الصنف'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Inventory Log Modal */}
+      {showLog && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">سجل حركات المخزون</h3>
+              <button
+                onClick={() => setShowLog(false)}
+                className="text-gray-400 hover:text-gray-600"
               >
-                <option value="name">الاسم</option>
-                <option value="quantity">الكمية</option>
-                <option value="value">القيمة</option>
-              </select>
+                ✕
+              </button>
             </div>
             
-            {/* عدد النتائج */}
-            <div className="mt-4 text-sm text-gray-600">
-              عرض {filteredInventory.length} من أصل {inventory.length} مادة
-              {searchTerm && ` - نتائج البحث عن "${searchTerm}"`}
-            </div>
-          </div>
-          {/* المخزون */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-4 border-b flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold">إدارة المخزون</h3>
-                <p className="text-sm text-gray-600">
-                  {permissions.canEdit ? 'استخدم الأزرار + و - لتعديل الكميات' : 'عرض فقط - ليس لديك صلاحية تعديل'}
-                </p>
-              </div>
-<div className="flex gap-2 flex-wrap">
-  {/* زر الطباعة */}
-  <button 
-    onClick={handlePrint}
-    className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 flex items-center gap-2"
-  >
-    <Printer className="h-4 w-4" />
-    طباعة
-  </button>
-  
-  {/* زر تصدير Excel */}
-  <button 
-    onClick={handleExportExcel}
-    className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 flex items-center gap-2"
-  >
-    <FileSpreadsheet className="h-4 w-4" />
-    تصدير Excel
-  </button>
-  
-  {permissions.canViewLog && (
-    <button 
-      onClick={() => setShowInventoryLog(true)}
-      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
-    >
-      <FileText className="h-4 w-4" />
-      سجل الحركات
-    </button>
-  )}
-  {permissions.canAdd && (
-    <button 
-      onClick={() => setShowAddItemForm(true)}
-      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
-    >
-      <Plus className="h-4 w-4" />
-      إضافة مادة
-    </button>
-  )}
-</div>
-            </div>
-
-            {/* تنبيه المخزون المنخفض */}
-            {lowStockItems.length > 0 && (
-              <div className="p-4 bg-red-50 border-b border-red-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
-                  <h4 className="font-medium text-red-800">تنبيه: مواد منخفضة المخزون</h4>
-                </div>
-                <div className="text-sm text-red-700">
-                  {lowStockItems.map(item => (
-                    <span key={item.id} className="inline-block bg-red-100 px-2 py-1 rounded mr-2 mb-1">
-                      {item.name} ({item.currentStock} {item.unit})
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* جدول المخزون */}
-            <div className="p-4">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="p-3 text-right">المادة</th>
-                      <th className="p-3 text-right">الفئة</th>
-                      <th className="p-3 text-right">الكمية</th>
-                      {permissions.canEdit && <th className="p-3 text-right">التحكم</th>}
-                      <th className="p-3 text-right">الحد الأدنى</th>
-                      <th className="p-3 text-right">سعر الوحدة</th>
-                      <th className="p-3 text-right">القيمة الإجمالية</th>
-                      <th className="p-3 text-right">المورد</th>
-                      <th className="p-3 text-right">الحالة</th>
-                      {(permissions.canEdit || permissions.canDelete) && <th className="p-3 text-right">إجراءات</th>}
+            <div className="overflow-x-auto max-h-96">
+              <table className="min-w-full">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      التاريخ
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      الوقت
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      الصنف
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      النوع
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      الكمية
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      قبل
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      بعد
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      السبب
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      المستخدم
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {inventoryLog.map((log) => (
+                    <tr key={log.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.date}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.time}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.itemName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                          ${log.action === 'إضافة' ? 'bg-green-100 text-green-800' : 
+                            log.action === 'سحب' ? 'bg-red-100 text-red-800' :
+                            log.action === 'تحديث' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'}`}>
+                          {log.action}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.quantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.previousStock}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.newStock}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.reason}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.user}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                   {filteredInventory.map(item => (
-                      <tr key={item.id} className="border-t hover:bg-gray-50">
-                        <td className="p-3">
-                          <div>
-                            <p className="font-medium">{item.name}</p>
-                            <p className="text-xs text-gray-500">{item.location}</p>
-                          </div>
-                        </td>
-                        <td className="p-3">{item.category}</td>
-                        <td className="p-3">
-                          <span className={`font-medium ${item.currentStock <= item.minStock ? 'text-red-600' : 'text-green-600'}`}>
-                            {item.currentStock} {item.unit}
-                          </span>
-                        </td>
-                        {permissions.canEdit && (
-                          <td className="p-3">
-                            <div className="flex items-center gap-1">
-                              <button 
-                                onClick={() => adjustQuantity(item.id, -1, 'تقليل يدوي')}
-                                className="w-7 h-7 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 text-lg font-bold"
-                                title="تقليل الكمية"
-                              >
-                                −
-                              </button>
-                              <span className="mx-2 font-medium min-w-[30px] text-center">
-                                {item.currentStock}
-                              </span>
-                              <button 
-                                onClick={() => adjustQuantity(item.id, 1, 'إضافة يدوية')}
-                                className="w-7 h-7 bg-green-500 text-white rounded flex items-center justify-center hover:bg-green-600 text-lg font-bold"
-                                title="زيادة الكمية"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                        <td className="p-3">{item.minStock} {item.unit}</td>
-                        <td className="p-3">{item.unitPrice} د.أ</td>
-                        <td className="p-3 font-medium">{(item.currentStock * item.unitPrice).toLocaleString()} د.أ</td>
-                        <td className="p-3">{item.supplier}</td>
-                        <td className="p-3">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            item.currentStock === 0 ? 'bg-gray-100 text-gray-700' :
-                            item.currentStock <= item.minStock ? 'bg-red-100 text-red-700' : 
-                            'bg-green-100 text-green-700'
-                          }`}>
-                            {item.currentStock === 0 ? 'نفد' :
-                             item.currentStock <= item.minStock ? 'منخفض' : 'طبيعي'}
-                          </span>
-                        </td>
-                        {(permissions.canEdit || permissions.canDelete) && (
-                          <td className="p-3">
-                            <div className="flex gap-1">
-                              {permissions.canEdit && (
-                                <button 
-                                  onClick={() => adjustQuantity(item.id, 10, 'إضافة سريعة +10')}
-                                  className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                                  title="إضافة 10"
-                                >
-                                  +10
-                                </button>
-                              )}
-                              {permissions.canDelete && (
-                                <button 
-                                  onClick={() => deleteItem(item.id)}
-                                  className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                                  title="حذف المادة"
-                                >
-                                  🗑
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        </>
-      )}
-
-      {showAddItemForm && permissions.canAdd && (
-        <AddItemForm 
-          onClose={() => setShowAddItemForm(false)}
-          onSubmit={handleAddItem}
-        />
-      )}
-      
-      {showInventoryLog && permissions.canViewLog && (
-        <InventoryLogView 
-          inventoryLog={inventoryLog}
-          onClose={() => setShowInventoryLog(false)}
-        />
+        </div>
       )}
     </div>
   );

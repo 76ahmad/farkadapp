@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
-// Components
 import LoginView from './components/auth/LoginView';
-import Header from './components/layout/Header';
 import Footer from './components/shared/Footer';
 import ContractorDashboard from './components/dashboards/ContractorDashboard';
 import ArchitectDashboard from './components/dashboards/ArchitectDashboard';
@@ -17,145 +15,125 @@ import WorkersManagement from './components/workers/WorkersManagement';
 import TasksView from './components/tasks/TasksView';
 import ProjectsManagement from './components/projects/ProjectsManagement';
 import DailyLogView from './components/tasks/DailyLogView';
-// Data
-import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans } from './data/mockData';
 
-// UserContext
+import { mockInventory, mockProjects, mockWorkers, mockPlans } from './data/mockData';
+import {
+  inventoryService,
+  inventoryLogService,
+  projectsService,
+  workersService,
+  tasksService,
+  plansService,
+  dailyLogsService,
+  initializeFirebaseData
+} from './services/firebaseService';
+
 import { UserContext } from './contexts/UserContext';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard');
-  const [inventory, setInventory] = useState(mockInventory);
-  const [inventoryLog, setInventoryLog] = useState(mockInventoryLog);
-  const [projects] = useState(mockProjects);
-  const [workers] = useState(mockWorkers);
-  const [plans] = useState(mockPlans);
+  const [inventory, setInventory] = useState([]);
+  const [inventoryLog, setInventoryLog] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [workers, setWorkers] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [dailyLogs, setDailyLogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dataInitialized, setDataInitialized] = useState(false);
 
-  const [tasks] = useState([]);
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        if (!dataInitialized) {
+          await initializeFirebaseData({
+            inventory: mockInventory,
+            projects: mockProjects,
+            workers: mockWorkers,
+            plans: mockPlans
+          });
+          setDataInitialized(true);
+        }
 
-  const addInventoryLog = (itemId, itemName, action, quantity, previousStock, newStock, reason) => {
-    const newLog = {
-      id: Date.now(),
-      itemId,
-      itemName,
-      action,
-      quantity,
-      previousStock,
-      newStock,
-      reason,
-      user: currentUser?.displayName || 'مستخدم',
-      date: new Date().toLocaleDateString('ar-EG'),
-      time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+        const unsubscribes = [
+          inventoryService.subscribeToInventory(setInventory),
+          inventoryLogService.subscribeToInventoryLog(setInventoryLog),
+          projectsService.subscribeToProjects(setProjects),
+          workersService.subscribeToWorkers(setWorkers),
+          tasksService.subscribeToTasks(setTasks),
+          plansService.subscribeToPlans(setPlans),
+          dailyLogsService.subscribeToDailyLogs(setDailyLogs),
+        ];
+
+        setIsLoading(false);
+        return () => unsubscribes.forEach(unsub => unsub());
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        setIsLoading(false);
+      }
     };
-    setInventoryLog(prev => [newLog, ...prev]);
-  };
 
-  const handleLogin = (userData) => {
-    setCurrentUser(userData);
-  };
+    initializeApp();
+  }, [dataInitialized]);
 
+  const handleLogin = (userData) => setCurrentUser(userData);
   const handleLogout = () => {
     setCurrentUser(null);
     setCurrentView('dashboard');
   };
 
-  const handleViewChange = (view) => {
-    setCurrentView(view);
-  };
+  if (!currentUser) return <LoginView onLogin={handleLogin} />;
 
-  const lowStockCount = inventory.filter(item => item.currentStock <= item.minStock).length;
-
-  if (!currentUser) {
-    return <LoginView onLogin={handleLogin} />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">جاري تحميل البيانات...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <UserContext.Provider value={{ currentUser, setCurrentUser }}>
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <Header 
-          currentUser={currentUser}
-          onViewChange={handleViewChange}
-          onLogout={handleLogout}
-          lowStockCount={lowStockCount}
-        />
+      <div className="App">
+        <header className="App-header">
+          <div className="App-logo">LOGO</div>
+        </header>
 
-        <main className="flex-1">
+        <nav className="App-tabs">
+          <div className="App-tab" onClick={() => setCurrentView('dashboard')}>Dashboard</div>
+          <div className="App-tab" onClick={() => setCurrentView('inventory')}>Inventory</div>
+          <div className="App-tab" onClick={() => setCurrentView('tasks')}>Tasks</div>
+          <div className="App-tab" onClick={() => setCurrentView('projects')}>Projects</div>
+          <div className="App-tab" onClick={() => setCurrentView('statistics')}>Statistics</div>
+          <div className="App-tab" onClick={() => setCurrentView('workers')}>Workers</div>
+          <div className="App-tab" onClick={() => setCurrentView('profile')}>Profile</div>
+          <div className="App-tab" onClick={handleLogout}>Logout</div>
+        </nav>
+
+        <main className="App-content">
           {currentView === 'dashboard' && (
             <>
-              {currentUser.type === 'contractor' && (
-                <ContractorDashboard projects={projects} inventory={inventory} />
-              )}
-              {currentUser.type === 'architect' && (
-                <ArchitectDashboard plans={plans} />
-              )}
-              {currentUser.type === 'worker' && (
-                <WorkerDashboard workers={workers} currentUser={currentUser} />
-              )}
-              {currentUser.type === 'site_manager' && (
-                <SiteManagerDashboard 
-                  currentUser={currentUser}
-                  projects={projects}
-                  inventory={inventory}
-                  workers={workers}
-                  onViewChange={handleViewChange}
-                />
-              )}
-              {!['contractor', 'architect', 'worker', 'site_manager'].includes(currentUser.type) && (
-                <DefaultDashboard currentUser={currentUser} />
-              )}
+              {currentUser.type === 'contractor' && <ContractorDashboard projects={projects} inventory={inventory} />}
+              {currentUser.type === 'architect' && <ArchitectDashboard plans={plans} />}
+              {currentUser.type === 'worker' && <WorkerDashboard workers={workers} currentUser={currentUser} tasks={tasks} />}
+              {currentUser.type === 'site_manager' && <SiteManagerDashboard currentUser={currentUser} projects={projects} inventory={inventory} workers={workers} />}
+              {!['contractor', 'architect', 'worker', 'site_manager'].includes(currentUser.type) && <DefaultDashboard currentUser={currentUser} />}
             </>
           )}
-
-          {currentView === 'inventory' && (
-            <InventoryView 
-              inventory={inventory}
-              setInventory={setInventory}
-              inventoryLog={inventoryLog}
-              addInventoryLog={addInventoryLog}
-              currentUser={currentUser}
-            />
-          )}
-
-          {currentView === 'tasks' && (
-            <TasksView 
-              currentUser={currentUser}
-              inventory={inventory}
-              workers={workers}
-            />
-          )}
-
-          {currentView === 'statistics' && (
-            <StatisticsView 
-              inventory={inventory}
-              projects={projects}
-              tasks={tasks}
-              currentUser={currentUser}
-            />
-          )}
-
-          {currentView === 'profile' && (
-            <ProfileView currentUser={currentUser} />
-          )}
-
-          {currentView === 'projects' && currentUser?.type === 'contractor' && (
-            <ProjectsManagement currentUser={currentUser} />
-          )}
-
-          {currentView === 'daily-log' && currentUser?.type === 'site_manager' && (
-            <DailyLogView 
-              currentUser={currentUser}
-              projects={projects}
-              workers={workers}
-              inventory={inventory}
-            />
-          )}
-
-          {currentView === 'workers' && (
-            <WorkersManagement currentUser={currentUser} />
-          )}
+          {currentView === 'inventory' && <InventoryView inventory={inventory} inventoryLog={inventoryLog} currentUser={currentUser} />}
+          {currentView === 'tasks' && <TasksView currentUser={currentUser} inventory={inventory} workers={workers} tasks={tasks} />}
+          {currentView === 'statistics' && <StatisticsView inventory={inventory} projects={projects} tasks={tasks} currentUser={currentUser} workers={workers} />}
+          {currentView === 'profile' && <ProfileView currentUser={currentUser} />}
+          {currentView === 'projects' && <ProjectsManagement currentUser={currentUser} projects={projects} />}
+          {currentView === 'workers' && <WorkersManagement currentUser={currentUser} workers={workers} />}
+          {currentView === 'daily-log' && <DailyLogView currentUser={currentUser} projects={projects} workers={workers} inventory={inventory} dailyLogs={dailyLogs} />}
         </main>
 
+        <button className="App-button" onClick={() => alert("Action clicked!")}>Sticky Action</button>
         <Footer />
       </div>
     </UserContext.Provider>

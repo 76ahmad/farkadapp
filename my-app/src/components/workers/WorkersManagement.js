@@ -1,5 +1,3 @@
-// أنشئ ملف جديد: src/components/workers/WorkersManagement.js
-
 import React, { useState } from 'react';
 import { 
   Users, Plus, Edit2, Trash2, Phone, Mail, MapPin, 
@@ -8,56 +6,7 @@ import {
   DollarSign, Clock, AlertCircle, Save, X
 } from 'lucide-react';
 
-const WorkersManagement = ({ currentUser }) => {
-  // البيانات التجريبية للعمال
-  const [workers, setWorkers] = useState([
-    {
-      id: 1,
-      name: 'أحمد محمد علي',
-      email: 'ahmed@example.com',
-      phone: '0791234567',
-      role: 'عامل بناء',
-      specialization: 'بناء',
-      status: 'نشط',
-      joinDate: '2023-05-15',
-      salary: 500,
-      address: 'عمان - الزرقاء',
-      nationalId: '9901234567',
-      emergencyContact: '0791234568',
-      projects: ['فيلا الأحمد', 'عمارة النور']
-    },
-    {
-      id: 2,
-      name: 'محمد خالد سالم',
-      email: 'mohammed@example.com',
-      phone: '0797654321',
-      role: 'كهربائي',
-      specialization: 'كهرباء',
-      status: 'نشط',
-      joinDate: '2023-08-20',
-      salary: 600,
-      address: 'عمان - جبل الحسين',
-      nationalId: '9902345678',
-      emergencyContact: '0797654322',
-      projects: ['فيلا الأحمد']
-    },
-    {
-      id: 3,
-      name: 'عمر يوسف أحمد',
-      email: 'omar@example.com',
-      phone: '0785555555',
-      role: 'سباك',
-      specialization: 'سباكة',
-      status: 'غير نشط',
-      joinDate: '2023-03-10',
-      salary: 550,
-      address: 'عمان - ماركا',
-      nationalId: '9903456789',
-      emergencyContact: '0785555556',
-      projects: []
-    }
-  ]);
-
+const WorkersManagement = ({ currentUser, workers = [], workerActions }) => {
   const [showAddWorker, setShowAddWorker] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,15 +28,15 @@ const WorkersManagement = ({ currentUser }) => {
     total: workers.length,
     active: workers.filter(w => w.status === 'نشط').length,
     inactive: workers.filter(w => w.status === 'غير نشط').length,
-    totalSalaries: workers.reduce((sum, w) => sum + w.salary, 0)
+    totalSalaries: workers.reduce((sum, w) => sum + (w.salary || 0), 0)
   };
 
   // فلترة العمال
   const filteredWorkers = workers.filter(worker => {
     const matchesSearch = 
-      worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      worker.phone.includes(searchTerm) ||
-      worker.nationalId.includes(searchTerm);
+      worker.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      worker.phone?.includes(searchTerm) ||
+      worker.nationalId?.includes(searchTerm);
     
     const matchesStatus = 
       filterStatus === 'all' || worker.status === filterStatus;
@@ -99,9 +48,15 @@ const WorkersManagement = ({ currentUser }) => {
   });
 
   // حذف عامل
-  const handleDeleteWorker = (workerId) => {
+  const handleDeleteWorker = async (workerId) => {
     if (window.confirm('هل أنت متأكد من حذف هذا العامل؟')) {
-      setWorkers(prev => prev.filter(w => w.id !== workerId));
+      try {
+        await workerActions.deleteWorker(workerId);
+        alert('تم حذف العامل بنجاح!');
+      } catch (error) {
+        console.error('Error deleting worker:', error);
+        alert('حدث خطأ أثناء حذف العامل');
+      }
     }
   };
 
@@ -121,7 +76,7 @@ const WorkersManagement = ({ currentUser }) => {
       joinDate: worker?.joinDate || new Date().toISOString().split('T')[0]
     });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
       
       // التحقق من البيانات
@@ -130,25 +85,28 @@ const WorkersManagement = ({ currentUser }) => {
         return;
       }
 
-      if (worker) {
-        // تعديل عامل موجود
-        setWorkers(prev => prev.map(w => 
-          w.id === worker.id 
-            ? { ...w, ...formData, salary: parseFloat(formData.salary) }
-            : w
-        ));
-      } else {
-        // إضافة عامل جديد
-        const newWorker = {
-          id: Date.now(),
-          ...formData,
-          salary: parseFloat(formData.salary),
-          projects: []
-        };
-        setWorkers(prev => [...prev, newWorker]);
+      try {
+        if (worker) {
+          // تعديل عامل موجود
+          await workerActions.updateWorker(worker.id, {
+            ...formData,
+            salary: parseFloat(formData.salary)
+          });
+          alert('تم تحديث بيانات العامل بنجاح!');
+        } else {
+          // إضافة عامل جديد
+          await workerActions.addWorker({
+            ...formData,
+            salary: parseFloat(formData.salary),
+            projects: []
+          });
+          alert('تم إضافة العامل بنجاح!');
+        }
+        onClose();
+      } catch (error) {
+        console.error('Error saving worker:', error);
+        alert('حدث خطأ أثناء حفظ البيانات');
       }
-
-      onClose();
     };
 
     return (
@@ -469,88 +427,97 @@ const WorkersManagement = ({ currentUser }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredWorkers.map((worker) => {
-                const SpecIcon = specializations.find(s => s.value === worker.specialization)?.icon || Users;
-                
-                return (
-                  <tr key={worker.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
-                          <SpecIcon className="h-5 w-5 text-gray-600" />
-                        </div>
-                        <div className="mr-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {worker.name}
+              {filteredWorkers.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-8">
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">لا يوجد عمال مطابقون للبحث</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredWorkers.map((worker) => {
+                  const SpecIcon = specializations.find(s => s.value === worker.specialization)?.icon || Users;
+                  
+                  return (
+                    <tr key={worker.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            <SpecIcon className="h-5 w-5 text-gray-600" />
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {worker.nationalId}
+                          <div className="mr-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {worker.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {worker.nationalId}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{worker.role}</div>
-                      <div className="text-sm text-gray-500">{worker.specialization}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        {worker.phone}
-                      </div>
-                      {worker.email && (
-                        <div className="text-sm text-gray-500 flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {worker.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{worker.role}</div>
+                        <div className="text-sm text-gray-500">{worker.specialization}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {worker.phone}
                         </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {worker.salary} د.أ
-                      </div>
-                      <div className="text-sm text-gray-500">شهري</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        worker.status === 'نشط' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {worker.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {worker.projects.length > 0 ? (
-                          <div>
-                            {worker.projects.join(', ')}
-                            <span className="text-gray-500"> ({worker.projects.length})</span>
+                        {worker.email && (
+                          <div className="text-sm text-gray-500 flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {worker.email}
                           </div>
-                        ) : (
-                          <span className="text-gray-500">لا يوجد</span>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setEditingWorker(worker)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteWorker(worker.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {(worker.salary || 0).toLocaleString()} د.أ
+                        </div>
+                        <div className="text-sm text-gray-500">شهري</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          worker.status === 'نشط' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {worker.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {worker.projects && worker.projects.length > 0 ? (
+                            <div>
+                              {worker.projects.join(', ')}
+                              <span className="text-gray-500"> ({worker.projects.length})</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500">لا يوجد</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setEditingWorker(worker)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteWorker(worker.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { auth } from '../../services/firebase'; // ✅ صحيح
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Building } from 'lucide-react';
 
 const LoginView = ({ onLogin }) => {
@@ -6,8 +8,16 @@ const LoginView = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('contractor');
 
-  const handleLogin = () => {
-    if (email && password) {
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert('يرجى إدخال البيانات');
+      return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
       const userNames = {
         contractor: 'المقاول',
         architect: 'المهندس المعماري',
@@ -18,14 +28,19 @@ const LoginView = ({ onLogin }) => {
       };
 
       onLogin({
-        email: email,
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
         type: userType,
         displayName: userNames[userType]
       });
-    } else {
-      alert('يرجى إدخال البيانات');
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('فشل تسجيل الدخول: تأكد من البريد وكلمة المرور');
     }
   };
+
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
