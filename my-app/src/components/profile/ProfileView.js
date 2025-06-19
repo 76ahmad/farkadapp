@@ -213,34 +213,25 @@ const ProfileView = ({ currentUser }) => {
                     <Award className="h-4 w-4" />
                     سنوات الخبرة
                   </label>
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      value={profile.experience}
-                      onChange={(e) => setProfile({...profile, experience: e.target.value})}
-                      className="w-full p-2 border rounded-lg"
-                      min="0"
-                    />
-                  ) : (
-                    <p className="font-medium">{profile.experience} سنوات</p>
+                  <p className="font-medium">{profile.experience} سنوات</p>
+                  {isEditing && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      * يتم تحديد سنوات الخبرة من قبل الإدارة
+                    </p>
                   )}
                 </div>
 
+                {/* الأجر اليومي - للعرض فقط للعامل */}
                 <div>
                   <label className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                     <DollarSign className="h-4 w-4" />
                     الأجر اليومي
                   </label>
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      value={profile.dailyRate}
-                      onChange={(e) => setProfile({...profile, dailyRate: e.target.value})}
-                      className="w-full p-2 border rounded-lg"
-                      min="0"
-                    />
-                  ) : (
-                    <p className="font-medium">{profile.dailyRate} ريال/يوم</p>
+                  <p className="font-medium">{profile.dailyRate} ريال/يوم</p>
+                  {isEditing && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      * يتم تحديد الأجر من قبل الإدارة
+                    </p>
                   )}
                 </div>
               </>

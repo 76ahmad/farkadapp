@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   CheckSquare, Square, Plus, Trash2, Clock, AlertCircle, 
-  Calendar, Filter, Search 
+  Calendar, Filter, Search, User, MapPin, Briefcase
 } from 'lucide-react';
 
 // استيراد المكونات المطلوبة
@@ -20,7 +20,8 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
       completed: false,
       project: 'فيلا الأحمد',
       createdBy: 'المقاول',
-      createdAt: '2024-06-15'
+      createdAt: '2024-06-15',
+      assignedTo: 'worker' // العامل
     },
     {
       id: 2,
@@ -31,7 +32,32 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
       completed: true,
       project: 'فيلا الأحمد',
       createdBy: 'مدير الموقع',
-      createdAt: '2024-06-14'
+      createdAt: '2024-06-14',
+      assignedTo: 'worker'
+    },
+    {
+      id: 3,
+      title: 'تركيب البلاط في الصالة',
+      description: 'تركيب بلاط البورسلين في صالة الاستقبال',
+      priority: 'high',
+      dueDate: '2024-06-22',
+      completed: false,
+      project: 'فيلا الأحمد',
+      createdBy: 'مدير الموقع',
+      createdAt: '2024-06-16',
+      assignedTo: 'worker'
+    },
+    {
+      id: 4,
+      title: 'دهان الجدران الخارجية',
+      description: 'دهان الواجهة الأمامية للمبنى',
+      priority: 'medium',
+      dueDate: '2024-06-25',
+      completed: false,
+      project: 'فيلا الأحمد',
+      createdBy: 'المقاول',
+      createdAt: '2024-06-17',
+      assignedTo: 'worker'
     }
   ]);
 
@@ -114,7 +140,8 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
         ...formData,
         completed: false,
         createdBy: currentUser?.displayName || 'مستخدم',
-        createdAt: new Date().toISOString().split('T')[0]
+        createdAt: new Date().toISOString().split('T')[0],
+        assignedTo: currentUser?.type || 'user'
       };
 
       setTasks(prev => [newTask, ...prev]);
@@ -221,29 +248,205 @@ const TasksView = ({ currentUser, inventory = [], workers = [] }) => {
     );
   }
 
-  // إذا كان عامل، اعرض واجهة بسيطة
+  // إذا كان عامل، اعرض واجهة العامل المطورة
   if (currentUser?.type === 'worker') {
+    // فلترة المهام المخصصة للعامل فقط
+    const workerTasks = tasks.filter(task => task.assignedTo === 'worker');
+    const workerFilteredTasks = workerTasks.filter(task => {
+      const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           task.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = filterStatus === 'all' || 
+                           (filterStatus === 'completed' && task.completed) ||
+                           (filterStatus === 'pending' && !task.completed);
+      
+      const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
+      
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+
+    const workerStats = {
+      total: workerTasks.length,
+      completed: workerTasks.filter(t => t.completed).length,
+      pending: workerTasks.filter(t => !t.completed).length,
+      overdue: workerTasks.filter(t => !t.completed && new Date(t.dueDate) < new Date()).length
+    };
+
     return (
-      <div className="max-w-screen-xl mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">مهام العامل</h2>
-          <p className="text-sm text-gray-500">
-            مرحباً {currentUser?.displayName || currentUser?.name}
-          </p>
+      <div className="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
+        {/* رأس الصفحة */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <User className="h-8 w-8 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">مهام العامل</h2>
+              <p className="text-gray-600">مرحباً {currentUser?.displayName || currentUser?.name}</p>
+              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                <span className="flex items-center gap-1">
+                  <Briefcase className="h-4 w-4" />
+                  {currentUser?.specialization || 'عامل'}
+                </span>
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  فيلا الأحمد
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <Clock className="h-16 w-16 text-blue-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">
-            واجهة العامل قيد التطوير
-          </h3>
-          <p className="text-gray-600 mb-4">
-            هذه الواجهة ستتضمن المهام المكلف بها والجدول الزمني
-          </p>
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <p className="text-blue-800 text-sm">
-              💡 سيتم إضافة المزيد من الميزات قريباً
-            </p>
+        {/* إحصائيات العامل */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-blue-600 text-white p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">مهامي</h3>
+                <p className="text-2xl font-bold">{workerStats.total}</p>
+              </div>
+              <CheckSquare className="h-8 w-8" />
+            </div>
+          </div>
+          
+          <div className="bg-green-600 text-white p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">مكتملة</h3>
+                <p className="text-2xl font-bold">{workerStats.completed}</p>
+              </div>
+              <CheckSquare className="h-8 w-8" />
+            </div>
+          </div>
+          
+          <div className="bg-yellow-600 text-white p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">قيد التنفيذ</h3>
+                <p className="text-2xl font-bold">{workerStats.pending}</p>
+              </div>
+              <Clock className="h-8 w-8" />
+            </div>
+          </div>
+          
+          <div className="bg-red-600 text-white p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">متأخرة</h3>
+                <p className="text-2xl font-bold">{workerStats.overdue}</p>
+              </div>
+              <AlertCircle className="h-8 w-8" />
+            </div>
+          </div>
+        </div>
+
+        {/* البحث والفلترة */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="ابحث في مهامي..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full p-2 pl-8 border rounded"
+              />
+              <Search className="absolute right-2 top-3 h-4 w-4 text-gray-400" />
+            </div>
+            
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full p-2 border rounded"
+            >
+              <option value="all">كل المهام</option>
+              <option value="completed">المكتملة</option>
+              <option value="pending">قيد التنفيذ</option>
+            </select>
+            
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              className="w-full p-2 border rounded"
+            >
+              <option value="all">كل الأولويات</option>
+              <option value="high">عالية</option>
+              <option value="medium">متوسطة</option>
+              <option value="low">منخفضة</option>
+            </select>
+          </div>
+        </div>
+
+        {/* قائمة مهام العامل */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-4 border-b">
+            <h3 className="text-lg font-semibold">مهامي المكلف بها ({workerFilteredTasks.length})</h3>
+          </div>
+          
+          <div className="p-4 space-y-3">
+            {workerFilteredTasks.length === 0 ? (
+              <div className="text-center py-8">
+                <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">لا توجد مهام مكلف بها حالياً</p>
+              </div>
+            ) : (
+              workerFilteredTasks.map(task => (
+                <div
+                  key={task.id}
+                  className={`border rounded-lg p-4 ${
+                    task.completed ? 'bg-gray-50 opacity-75' : 'bg-white'
+                  } ${isOverdue(task.dueDate, task.completed) ? 'border-red-300 bg-red-50' : ''}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={() => toggleTask(task.id)}
+                      className="mt-1"
+                    >
+                      {task.completed ? (
+                        <CheckSquare className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <Square className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className={`font-medium ${
+                          task.completed ? 'line-through text-gray-500' : ''
+                        }`}>
+                          {task.title}
+                        </h4>
+                        {isOverdue(task.dueDate, task.completed) && (
+                          <span className="text-red-600 font-medium text-sm bg-red-100 px-2 py-1 rounded">
+                            متأخرة!
+                          </span>
+                        )}
+                      </div>
+                      
+                      {task.description && (
+                        <p className="text-sm text-gray-600 mb-2">{task.description}</p>
+                      )}
+                      
+                      <div className="flex items-center gap-4 text-xs">
+                        <span className={`px-2 py-1 rounded ${getPriorityColor(task.priority)}`}>
+                          {task.priority === 'high' ? 'عالية' : 
+                           task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
+                        </span>
+                        
+                        <span className="flex items-center gap-1 text-gray-500">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(task.dueDate).toLocaleDateString('ar-EG')}
+                        </span>
+                        
+                        <span className="text-gray-500">
+                          من: {task.createdBy}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
