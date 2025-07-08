@@ -1,24 +1,61 @@
 import React from 'react';
 import { 
   Building, LogOut, Package, CheckSquare, User, Users, 
-  FileText, Calendar, FolderOpen 
+  FileText, Calendar, FolderOpen, HelpCircle, BarChart3,
+  Wifi, WifiOff, AlertCircle
 } from 'lucide-react';
 
-const Header = ({ currentUser, onViewChange, onLogout, lowStockCount }) => {
+const Header = ({ 
+  currentUser, 
+  currentView,
+  setCurrentView, 
+  onLogout, 
+  connectionStatus,
+  lowStockCount = 0 
+}) => {
+  
+  const getConnectionIcon = () => {
+    switch(connectionStatus) {
+      case 'connected':
+        return <Wifi className="h-4 w-4 text-green-600" />;
+      case 'connecting':
+        return <div className="h-4 w-4 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin" />;
+      case 'error':
+        return <WifiOff className="h-4 w-4 text-red-600" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getConnectionText = () => {
+    switch(connectionStatus) {
+      case 'connected': return 'متصل';
+      case 'connecting': return 'جاري الاتصال';
+      case 'error': return 'خطأ في الاتصال';
+      default: return 'غير معروف';
+    }
+  };
+
   return (
-    <header className="bg-white shadow px-6 py-4 flex justify-between items-center">
+    <header className="fixed top-0 left-0 right-0 bg-white shadow-md px-6 py-4 flex justify-between items-center z-40">
       <div className="flex items-center gap-3">
-        <Building className="text-blue-600" />
+        <Building className="text-blue-600 h-8 w-8" />
         <div>
           <h1 className="text-xl font-bold">منصة البناء الذكي</h1>
-          <p className="text-sm text-gray-600">{currentUser?.displayName}</p>
+          <div className="flex items-center gap-3 text-sm text-gray-600">
+            <span>{currentUser?.displayName}</span>
+            <div className="flex items-center gap-1" title={`حالة الاتصال: ${getConnectionText()}`}>
+              {getConnectionIcon()}
+              <span className="hidden sm:inline">{getConnectionText()}</span>
+            </div>
+          </div>
         </div>
       </div>
       
-      <div className="flex gap-4 text-sm">
+      <nav className="flex gap-4 text-sm">
         <button 
-          onClick={() => onViewChange('dashboard')} 
-          className="hover:underline"
+          onClick={() => setCurrentView('dashboard')} 
+          className={`hover:text-blue-600 transition-colors ${currentView === 'dashboard' ? 'text-blue-600 font-semibold' : ''}`}
         >
           الرئيسية
         </button>
@@ -27,19 +64,27 @@ const Header = ({ currentUser, onViewChange, onLogout, lowStockCount }) => {
         {currentUser?.type === 'contractor' && (
           <>
             <button 
-              onClick={() => onViewChange('projects')} 
-              className="hover:underline flex items-center gap-1"
+              onClick={() => setCurrentView('projects')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'projects' ? 'text-blue-600 font-semibold' : ''}`}
             >
               <FolderOpen className="h-4 w-4" />
               المشاريع
             </button>
             
             <button 
-              onClick={() => onViewChange('tasks')} 
-              className="hover:underline flex items-center gap-1"
+              onClick={() => setCurrentView('weekly-tasks')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'weekly-tasks' ? 'text-blue-600 font-semibold' : ''}`}
             >
               <Calendar className="h-4 w-4" />
               المهام الأسبوعية
+            </button>
+
+            <button 
+              onClick={() => setCurrentView('support-requests')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'support-requests' ? 'text-blue-600 font-semibold' : ''}`}
+            >
+              <HelpCircle className="h-4 w-4" />
+              طلبات الدعم
             </button>
           </>
         )}
@@ -48,82 +93,106 @@ const Header = ({ currentUser, onViewChange, onLogout, lowStockCount }) => {
         {currentUser?.type === 'site_manager' && (
           <>
             <button 
-              onClick={() => onViewChange('inventory')} 
-              className="hover:underline flex items-center gap-1"
-            >
-              <Package className="h-4 w-4" />
-              المخزون
-              {lowStockCount > 0 && (
-                <span className="bg-red-500 text-white text-xs rounded-full px-1">
-                  {lowStockCount}
-                </span>
-              )}
-            </button>
-            
-            <button 
-              onClick={() => onViewChange('workers')} 
-              className="hover:underline flex items-center gap-1"
-            >
-              <Users className="h-4 w-4" />
-              العمال
-            </button>
-            
-            <button 
-              onClick={() => onViewChange('tasks')} 
-              className="hover:underline flex items-center gap-1"
+              onClick={() => setCurrentView('task-distribution')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'task-distribution' ? 'text-blue-600 font-semibold' : ''}`}
             >
               <CheckSquare className="h-4 w-4" />
-              المهام
+              توزيع المهام
             </button>
             
             <button 
-              onClick={() => onViewChange('daily-log')} 
-              className="hover:underline flex items-center gap-1"
+              onClick={() => setCurrentView('daily-log')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'daily-log' ? 'text-blue-600 font-semibold' : ''}`}
             >
               <FileText className="h-4 w-4" />
-              السجل اليومي
+              التقرير اليومي
+            </button>
+
+            <button 
+              onClick={() => setCurrentView('support-requests')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'support-requests' ? 'text-blue-600 font-semibold' : ''}`}
+            >
+              <HelpCircle className="h-4 w-4" />
+              طلبات الدعم
             </button>
           </>
         )}
         
         {/* للعامل */}
         {currentUser?.type === 'worker' && (
-          <button 
-            onClick={() => onViewChange('tasks')} 
-            className="hover:underline flex items-center gap-1"
-          >
-            <CheckSquare className="h-4 w-4" />
-            مهامي
-          </button>
+          <>
+            <button 
+              onClick={() => setCurrentView('tasks')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'tasks' ? 'text-blue-600 font-semibold' : ''}`}
+            >
+              <CheckSquare className="h-4 w-4" />
+              مهامي
+            </button>
+          </>
+        )}
+
+        {/* للمعماري */}
+        {currentUser?.type === 'architect' && (
+          <>
+            <button 
+              onClick={() => setCurrentView('projects')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'projects' ? 'text-blue-600 font-semibold' : ''}`}
+            >
+              <FolderOpen className="h-4 w-4" />
+              المشاريع
+            </button>
+          </>
         )}
         
-        {/* للمقاول فقط - الإحصائيات */}
-        {currentUser?.type === 'contractor' && (
-          <button 
-            onClick={() => onViewChange('statistics')} 
-            className="hover:underline flex items-center gap-1"
-          >
-            📊 الإحصائيات
-          </button>
-        )}
+        {/* للجميع */}
+        <button 
+          onClick={() => setCurrentView('inventory')} 
+          className={`hover:text-blue-600 transition-colors flex items-center gap-1 relative ${currentView === 'inventory' ? 'text-blue-600 font-semibold' : ''}`}
+        >
+          <Package className="h-4 w-4" />
+          المخزون
+          {lowStockCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {lowStockCount}
+            </span>
+          )}
+        </button>
         
         <button 
-          onClick={() => onViewChange('profile')} 
-          className="hover:underline flex items-center gap-1"
+          onClick={() => setCurrentView('workers')} 
+          className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'workers' ? 'text-blue-600 font-semibold' : ''}`}
+        >
+          <Users className="h-4 w-4" />
+          العمال
+        </button>
+        
+        <button 
+          onClick={() => setCurrentView('statistics')} 
+          className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'statistics' ? 'text-blue-600 font-semibold' : ''}`}
+        >
+          <BarChart3 className="h-4 w-4" />
+          الإحصائيات
+        </button>
+        
+        <button 
+          onClick={() => setCurrentView('profile')} 
+          className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'profile' ? 'text-blue-600 font-semibold' : ''}`}
         >
           <User className="h-4 w-4" />
           الملف الشخصي
         </button>
-        
-        <button 
-          onClick={onLogout} 
-          className="flex items-center gap-2 text-gray-600 hover:text-red-500"
-        >
-          <LogOut className="h-5 w-5" /> خروج
-        </button>
-      </div>
+      </nav>
+      
+      <button 
+        onClick={onLogout}
+        className="flex items-center gap-2 text-red-600 hover:text-red-800 transition-colors"
+      >
+        <LogOut className="h-4 w-4" />
+        <span className="hidden sm:inline">تسجيل الخروج</span>
+      </button>
     </header>
   );
 };
 
 export default Header;
+
