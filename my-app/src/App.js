@@ -20,6 +20,8 @@ import DailyLogView from './components/tasks/DailyLogView';
 import WeeklyTasksView from './components/tasks/WeeklyTasksView';
 import TaskDistributionView from './components/tasks/TaskDistributionView';
 import SupportRequestView from './components/requests/SupportRequestView';
+import MeetingsView from './components/meetings/MeetingsView';
+import PlansView from './components/plans/PlansView';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import NotificationSystem from './components/shared/NotificationSystem';
@@ -251,6 +253,17 @@ function App() {
           }
         );
 
+        const meetingsUnsub = meetingsService.subscribeToMeetings(
+          (data) => {
+            setMeetings(data);
+            console.log('Meetings updated:', data.length, 'meetings');
+          },
+          (error) => {
+            console.error('Meetings subscription error:', error);
+            addNotification('خطأ في تحميل الاجتماعات', 'error');
+          }
+        );
+
         // Store all unsubscribe functions
         unsubscribes = [
           inventoryUnsub,
@@ -264,7 +277,8 @@ function App() {
           clientsUnsub,
           milestonesUnsub,
           statisticsUnsub,
-          supportRequestsUnsub
+          supportRequestsUnsub,
+          meetingsUnsub
         ];
 
         setConnectionStatus('connected');
@@ -611,6 +625,74 @@ function App() {
     }
   };
 
+  // Action handlers for meetings
+  const meetingActions = {
+    addMeeting: async (meetingData) => {
+      try {
+        await meetingsService.addMeeting(meetingData);
+        addNotification('تم إضافة الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error adding meeting:', error);
+        addNotification('فشل في إضافة الاجتماع', 'error');
+        throw error;
+      }
+    },
+    updateMeeting: async (meetingId, updates) => {
+      try {
+        await meetingsService.updateMeeting(meetingId, updates);
+        addNotification('تم تحديث الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error updating meeting:', error);
+        addNotification('فشل في تحديث الاجتماع', 'error');
+        throw error;
+      }
+    },
+    deleteMeeting: async (meetingId) => {
+      try {
+        await meetingsService.deleteMeeting(meetingId);
+        addNotification('تم حذف الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error deleting meeting:', error);
+        addNotification('فشل في حذف الاجتماع', 'error');
+        throw error;
+      }
+    }
+  };
+
+  // Action handlers for plans
+  const planActions = {
+    addPlan: async (planData) => {
+      try {
+        await plansService.addPlan(planData);
+        addNotification('تم إضافة المخطط بنجاح', 'success');
+      } catch (error) {
+        console.error('Error adding plan:', error);
+        addNotification('فشل في إضافة المخطط', 'error');
+        throw error;
+      }
+    },
+    updatePlan: async (planId, updates) => {
+      try {
+        await plansService.updatePlan(planId, updates);
+        addNotification('تم تحديث المخطط بنجاح', 'success');
+      } catch (error) {
+        console.error('Error updating plan:', error);
+        addNotification('فشل في تحديث المخطط', 'error');
+        throw error;
+      }
+    },
+    deletePlan: async (planId) => {
+      try {
+        await plansService.deletePlan(planId);
+        addNotification('تم حذف المخطط بنجاح', 'success');
+      } catch (error) {
+        console.error('Error deleting plan:', error);
+        addNotification('فشل في حذف المخطط', 'error');
+        throw error;
+      }
+    }
+  };
+
   // Handle login
   const handleLogin = (user) => {
     setCurrentUser(user);
@@ -829,6 +911,22 @@ function App() {
                 currentUser={currentUser}
                 projects={projects}
                 supportRequestActions={supportRequestActions}
+              />
+            )}
+
+            {currentView === 'meetings' && (
+              <MeetingsView 
+                currentUser={currentUser}
+                meetings={meetings}
+                meetingActions={meetingActions}
+              />
+            )}
+
+            {currentView === 'plans' && (
+              <PlansView 
+                currentUser={currentUser}
+                plans={plans}
+                planActions={planActions}
               />
             )}
           </main>

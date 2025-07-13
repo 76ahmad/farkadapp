@@ -863,7 +863,7 @@ export const initializeFirebaseData = async (mockData) => {
     console.log('Checking if Firebase data initialization is needed...');
     
     // Check if collections are empty
-    const collections = ['inventory', 'projects', 'workers', 'plans'];
+    const collections = ['inventory', 'projects', 'workers', 'plans', 'meetings'];
     const batch = writeBatch(db);
     let needsInitialization = false;
     
