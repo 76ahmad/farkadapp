@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { auth } from '../../firebase/config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 const roles = [
   { value: 'architect', label: 'مهندس معماري' },
@@ -17,6 +18,16 @@ function LoginView({ onLogin }) {
   const [role, setRole] = useState(roles[0].value);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  const roleRoutes = {
+    architect: '/dashboard/architect',
+    site_manager: '/dashboard/site-manager',
+    contractor: '/dashboard/contractor',
+    worker: '/dashboard/worker',
+    inspector: '/dashboard/inspector',
+    client: '/dashboard/client',
+  };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -31,6 +42,7 @@ function LoginView({ onLogin }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       onLogin({ uid: user.uid, email: user.email, role });
+      navigate(roleRoutes[role] || '/');
     } catch (err) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
