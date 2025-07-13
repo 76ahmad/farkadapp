@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './App.css';
 import App from './App';
+import { BrowserRouter } from 'react-router-dom';
 
 // Initialize React 18 root
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -9,7 +10,9 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 // Render app with strict mode for development
 root.render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );
 
