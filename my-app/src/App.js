@@ -20,6 +20,8 @@ import DailyLogView from './components/tasks/DailyLogView';
 import WeeklyTasksView from './components/tasks/WeeklyTasksView';
 import TaskDistributionView from './components/tasks/TaskDistributionView';
 import SupportRequestView from './components/requests/SupportRequestView';
+import MapsManager from './components/maps/MapsManager';
+import MeetingsManager from './components/meetings/MeetingsManager';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import NotificationSystem from './components/shared/NotificationSystem';
@@ -49,6 +51,10 @@ import { weeklyTasksService } from './services/weeklyTasksService';
 // Support Request Service
 import { supportRequestService } from './services/supportRequestService';
 
+// Maps and Meetings Services
+import { mapsService } from './services/mapsService';
+import { meetingsService } from './services/meetingsService';
+
 // UserContext
 import { UserContext } from './contexts/UserContext';
 
@@ -69,6 +75,8 @@ function App() {
   const [milestones, setMilestones] = useState([]);
   const [statistics, setStatistics] = useState([]);
   const [supportRequests, setSupportRequests] = useState([]);
+  const [maps, setMaps] = useState([]);
+  const [meetings, setMeetings] = useState([]);
   
   // Loading and error states
   const [isLoading, setIsLoading] = useState(true);
@@ -246,6 +254,36 @@ function App() {
           }
         );
 
+        // Set up maps and meetings listeners for current project
+        let mapsUnsub = () => {};
+        let meetingsUnsub = () => {};
+        
+        if (currentUser?.currentProjectId) {
+          mapsUnsub = mapsService.subscribeToProjectMaps(
+            currentUser.currentProjectId,
+            (data) => {
+              setMaps(data);
+              console.log('Maps updated:', data.length, 'maps');
+            },
+            (error) => {
+              console.error('Maps subscription error:', error);
+              addNotification('خطأ في تحميل الخوارط', 'error');
+            }
+          );
+
+          meetingsUnsub = meetingsService.subscribeToProjectMeetings(
+            currentUser.currentProjectId,
+            (data) => {
+              setMeetings(data);
+              console.log('Meetings updated:', data.length, 'meetings');
+            },
+            (error) => {
+              console.error('Meetings subscription error:', error);
+              addNotification('خطأ في تحميل الاجتماعات', 'error');
+            }
+          );
+        }
+
         // Store all unsubscribe functions
         unsubscribes = [
           inventoryUnsub,
@@ -259,7 +297,9 @@ function App() {
           clientsUnsub,
           milestonesUnsub,
           statisticsUnsub,
-          supportRequestsUnsub
+          supportRequestsUnsub,
+          mapsUnsub,
+          meetingsUnsub
         ];
 
         setConnectionStatus('connected');
@@ -606,6 +646,84 @@ function App() {
     }
   };
 
+  // Action handlers for maps
+  const mapsActions = {
+    addMap: async (map) => {
+      try {
+        await mapsService.addMap(map);
+        addNotification('تم إضافة الخارطة بنجاح', 'success');
+      } catch (error) {
+        console.error('Error adding map:', error);
+        addNotification('فشل في إضافة الخارطة', 'error');
+        throw error;
+      }
+    },
+    updateMap: async (mapId, updates) => {
+      try {
+        await mapsService.updateMap(mapId, updates);
+        addNotification('تم تحديث الخارطة بنجاح', 'success');
+      } catch (error) {
+        console.error('Error updating map:', error);
+        addNotification('فشل في تحديث الخارطة', 'error');
+        throw error;
+      }
+    },
+    deleteMap: async (mapId) => {
+      try {
+        await mapsService.deleteMap(mapId);
+        addNotification('تم حذف الخارطة بنجاح', 'success');
+      } catch (error) {
+        console.error('Error deleting map:', error);
+        addNotification('فشل في حذف الخارطة', 'error');
+        throw error;
+      }
+    }
+  };
+
+  // Action handlers for meetings
+  const meetingsActions = {
+    addMeeting: async (meeting) => {
+      try {
+        await meetingsService.addMeeting(meeting);
+        addNotification('تم إضافة الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error adding meeting:', error);
+        addNotification('فشل في إضافة الاجتماع', 'error');
+        throw error;
+      }
+    },
+    updateMeeting: async (meetingId, updates) => {
+      try {
+        await meetingsService.updateMeeting(meetingId, updates);
+        addNotification('تم تحديث الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error updating meeting:', error);
+        addNotification('فشل في تحديث الاجتماع', 'error');
+        throw error;
+      }
+    },
+    deleteMeeting: async (meetingId) => {
+      try {
+        await meetingsService.deleteMeeting(meetingId);
+        addNotification('تم حذف الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error deleting meeting:', error);
+        addNotification('فشل في حذف الاجتماع', 'error');
+        throw error;
+      }
+    },
+    addMinutes: async (meetingId, minutes) => {
+      try {
+        await meetingsService.addMeetingMinutes(meetingId, minutes);
+        addNotification('تم إضافة محضر الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error adding meeting minutes:', error);
+        addNotification('فشل في إضافة محضر الاجتماع', 'error');
+        throw error;
+      }
+    }
+  };
+
   // Handle login
   const handleLogin = (user) => {
     setCurrentUser(user);
@@ -824,6 +942,26 @@ function App() {
                 currentUser={currentUser}
                 projects={projects}
                 supportRequestActions={supportRequestActions}
+              />
+            )}
+
+            {currentView === 'maps' && (
+              <MapsManager 
+                currentUser={currentUser}
+                currentProject={projects.find(p => p.id === currentUser?.currentProjectId)}
+                maps={maps}
+                mapsActions={mapsActions}
+                onViewChange={setCurrentView}
+              />
+            )}
+
+            {currentView === 'meetings' && (
+              <MeetingsManager 
+                currentUser={currentUser}
+                currentProject={projects.find(p => p.id === currentUser?.currentProjectId)}
+                meetings={meetings}
+                meetingsActions={meetingsActions}
+                onViewChange={setCurrentView}
               />
             )}
           </main>

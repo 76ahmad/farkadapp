@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Building, LogOut, Package, CheckSquare, User, Users, 
   FileText, Calendar, FolderOpen, HelpCircle, BarChart3,
-  Wifi, WifiOff, AlertCircle
+  Wifi, WifiOff, AlertCircle, Map, MessageSquare
 } from 'lucide-react';
 
 const Header = ({ 
@@ -140,6 +140,27 @@ const Header = ({
             >
               <FolderOpen className="h-4 w-4" />
               المشاريع
+            </button>
+          </>
+        )}
+        
+        {/* للخوارط والاجتماعات - للمقاول ومدير الموقع والمعماري */}
+        {['contractor', 'site_manager', 'architect'].includes(currentUser?.type) && (
+          <>
+            <button 
+              onClick={() => setCurrentView('maps')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'maps' ? 'text-blue-600 font-semibold' : ''}`}
+            >
+              <Map className="h-4 w-4" />
+              الخوارط
+            </button>
+            
+            <button 
+              onClick={() => setCurrentView('meetings')} 
+              className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'meetings' ? 'text-blue-600 font-semibold' : ''}`}
+            >
+              <MessageSquare className="h-4 w-4" />
+              الاجتماعات
             </button>
           </>
         )}
