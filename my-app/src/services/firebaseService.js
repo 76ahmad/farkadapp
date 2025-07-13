@@ -528,6 +528,90 @@ export const plansService = {
       if (errorCallback) errorCallback(error);
       return () => {};
     }
+  },
+
+  addPlan: async (planData) => {
+    return retryOperation(async () => {
+      if (!planData.title || !planData.category) {
+        throw new Error('عنوان المخطط والفئة مطلوبان');
+      }
+
+      const docRef = await addDoc(collection(db, 'plans'), {
+        ...planData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      console.log('Plan added successfully:', docRef.id);
+      return docRef.id;
+    });
+  },
+
+  updatePlan: async (planId, planData) => {
+    return retryOperation(async () => {
+      if (!planId) {
+        throw new Error('معرف المخطط مطلوب للتحديث');
+      }
+
+      const planRef = doc(db, 'plans', planId);
+      
+      const planDoc = await getDoc(planRef);
+      if (!planDoc.exists()) {
+        throw new Error(`المخطط بالمعرف ${planId} غير موجود`);
+      }
+
+      await updateDoc(planRef, {
+        ...planData,
+        updatedAt: serverTimestamp()
+      });
+
+      console.log('Plan updated successfully:', planId);
+    });
+  },
+
+  deletePlan: async (planId) => {
+    return retryOperation(async () => {
+      if (!planId) {
+        throw new Error('معرف المخطط مطلوب للحذف');
+      }
+
+      const planRef = doc(db, 'plans', planId);
+      await deleteDoc(planRef);
+
+      console.log('Plan deleted successfully:', planId);
+    });
+  },
+
+  getPlanById: async (planId) => {
+    return retryOperation(async () => {
+      const planRef = doc(db, 'plans', planId);
+      const planDoc = await getDoc(planRef);
+      
+      if (planDoc.exists()) {
+        return { id: planDoc.id, ...planDoc.data() };
+      } else {
+        throw new Error('المخطط غير موجود');
+      }
+    });
+  },
+
+  getPlansByCategory: async (category) => {
+    return retryOperation(async () => {
+      const q = query(
+        collection(db, 'plans'),
+        where('category', '==', category),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const plans = [];
+      
+      snapshot.forEach((doc) => {
+        plans.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return plans;
+    });
   }
 };
 

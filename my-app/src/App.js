@@ -25,7 +25,7 @@ import LoadingSpinner from './components/shared/LoadingSpinner';
 import NotificationSystem from './components/shared/NotificationSystem';
 
 // Data - ONLY for initial setup if Firebase is empty
-import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans } from './data/mockData';
+import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans, mockMeetings } from './data/mockData';
 
 // Firebase Services
 import {
@@ -49,6 +49,9 @@ import { weeklyTasksService } from './services/weeklyTasksService';
 // Support Request Service
 import { supportRequestService } from './services/supportRequestService';
 
+// Meetings Service
+import { meetingsService } from './services/meetingsService';
+
 // UserContext
 import { UserContext } from './contexts/UserContext';
 
@@ -69,6 +72,7 @@ function App() {
   const [milestones, setMilestones] = useState([]);
   const [statistics, setStatistics] = useState([]);
   const [supportRequests, setSupportRequests] = useState([]);
+  const [meetings, setMeetings] = useState([]);
   
   // Loading and error states
   const [isLoading, setIsLoading] = useState(true);
@@ -109,7 +113,8 @@ function App() {
             inventory: mockInventory,
             projects: mockProjects,
             workers: mockWorkers,
-            plans: mockPlans
+            plans: mockPlans,
+            meetings: mockMeetings
           };
           
           const initialized = await initializeFirebaseData(mockData);

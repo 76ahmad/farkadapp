@@ -89,9 +89,93 @@ export const mockWorkers = [
 export const mockPlans = [
   {
     id: 1,
-    name: 'مخطط الطابق الأرضي',
+    title: 'مخطط الطابق الأرضي',
+    description: 'مخطط معماري للطابق الأرضي مع تفاصيل الغرف والمرافق',
+    category: 'architectural',
     version: '1.2',
+    architect: 'م. أحمد محمد',
     uploadDate: '2024-06-10',
-    status: 'معتمد'
+    status: 'active',
+    fileUrl: 'https://example.com/plans/ground-floor-plan.pdf'
+  },
+  {
+    id: 2,
+    title: 'مخطط الهيكل الإنشائي',
+    description: 'مخطط تفصيلي للهيكل الإنشائي والأعمدة والجسور',
+    category: 'structural',
+    version: '2.1',
+    architect: 'م. سارة علي',
+    uploadDate: '2024-06-08',
+    status: 'active',
+    fileUrl: 'https://example.com/plans/structural-plan.pdf'
+  },
+  {
+    id: 3,
+    title: 'مخطط التمديدات الكهربائية',
+    description: 'مخطط شامل للتمديدات الكهربائية والمفاتيح والمقابس',
+    category: 'electrical',
+    version: '1.0',
+    architect: 'م. محمد حسن',
+    uploadDate: '2024-06-05',
+    status: 'active',
+    fileUrl: 'https://example.com/plans/electrical-plan.pdf'
+  },
+  {
+    id: 4,
+    title: 'مخطط شبكة المياه',
+    description: 'مخطط تفصيلي لشبكة المياه والصرف الصحي',
+    category: 'plumbing',
+    version: '1.1',
+    architect: 'م. فاطمة أحمد',
+    uploadDate: '2024-06-03',
+    status: 'active',
+    fileUrl: 'https://example.com/plans/plumbing-plan.pdf'
+  }
+];
+
+export const mockMeetings = [
+  {
+    id: 1,
+    title: 'اجتماع مراجعة التقدم الأسبوعي',
+    description: 'مراجعة التقدم المحرز في المشروع ومناقشة الخطط للأسبوع القادم',
+    date: '2024-06-20',
+    time: '09:00',
+    location: 'مكتب الموقع',
+    attendees: ['المقاول', 'مدير الموقع', 'المعماري'],
+    agenda: '1. مراجعة التقدم المحرز\n2. مناقشة المشاكل والتحديات\n3. تخطيط الأسبوع القادم\n4. مراجعة الميزانية',
+    status: 'scheduled'
+  },
+  {
+    id: 2,
+    title: 'اجتماع مع العميل',
+    description: 'اجتماع مع العميل لمراجعة التصميم النهائي والحصول على الموافقة',
+    date: '2024-06-18',
+    time: '14:00',
+    location: 'مكتب العميل',
+    attendees: ['المقاول', 'المعماري', 'العميل'],
+    agenda: '1. عرض التصميم النهائي\n2. مناقشة التعديلات المطلوبة\n3. الموافقة على التصميم\n4. تحديد موعد البدء',
+    status: 'completed'
+  },
+  {
+    id: 3,
+    title: 'اجتماع فريق العمل',
+    description: 'اجتماع دوري مع فريق العمل لمناقشة المهام والتحديات',
+    date: '2024-06-22',
+    time: '08:00',
+    location: 'موقع المشروع',
+    attendees: ['مدير الموقع', 'العمال', 'المشرفون'],
+    agenda: '1. توزيع المهام اليومية\n2. مراجعة السلامة\n3. مناقشة المشاكل الفنية\n4. تخطيط العمل',
+    status: 'scheduled'
+  },
+  {
+    id: 4,
+    title: 'اجتماع الموردين',
+    description: 'اجتماع مع الموردين لمناقشة الأسعار والمواصفات',
+    date: '2024-06-15',
+    time: '11:00',
+    location: 'مكتب المقاول',
+    attendees: ['المقاول', 'مدير المشتريات', 'الموردون'],
+    agenda: '1. مراجعة الأسعار\n2. مناقشة المواصفات\n3. تحديد مواعيد التوريد\n4. توقيع العقود',
+    status: 'completed'
   }
 ];
