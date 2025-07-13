@@ -1,8 +1,8 @@
-// firebase/config.js - إعداد Firebase بإعداداتك الحقيقية
+// firebase/config.js - إعداد Firebase بإعداداتك الحقيقية (محسن)
 import { initializeApp } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
 // إعدادات Firebase الخاصة بك
 const firebaseConfig = {
@@ -19,7 +19,7 @@ const firebaseConfig = {
 let app;
 let db;
 let auth;
-let analytics;
+let analytics = null;
 
 try {
   // تهيئة Firebase
@@ -34,10 +34,24 @@ try {
   auth = getAuth(app);
   console.log('✅ Auth initialized successfully');
   
-  // تهيئة Analytics (اختياري)
+  // تهيئة Analytics بشكل آمن (فقط إذا كان مدعوماً)
   if (typeof window !== 'undefined') {
-    analytics = getAnalytics(app);
-    console.log('✅ Analytics initialized successfully');
+    isSupported().then((supported) => {
+      if (supported) {
+        try {
+          analytics = getAnalytics(app);
+          console.log('✅ Analytics initialized successfully');
+        } catch (error) {
+          console.warn('⚠️ Analytics initialization failed, continuing without it:', error.message);
+          analytics = null;
+        }
+      } else {
+        console.log('ℹ️ Analytics not supported in this environment');
+      }
+    }).catch((error) => {
+      console.warn('⚠️ Analytics support check failed:', error.message);
+      analytics = null;
+    });
   }
   
   // للتطوير المحلي - Firebase Emulator (إذا كنت تستخدمه)
@@ -80,3 +94,4 @@ export const getProjectInfo = () => {
     timestamp: new Date().toISOString()
   };
 };
+
