@@ -20,12 +20,14 @@ import DailyLogView from './components/tasks/DailyLogView';
 import WeeklyTasksView from './components/tasks/WeeklyTasksView';
 import TaskDistributionView from './components/tasks/TaskDistributionView';
 import SupportRequestView from './components/requests/SupportRequestView';
+import PlansManagement from './components/plans/PlansManagement';
+import MeetingsManagement from './components/meetings/MeetingsManagement';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import NotificationSystem from './components/shared/NotificationSystem';
 
 // Data - ONLY for initial setup if Firebase is empty
-import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans } from './data/mockData';
+import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans, mockMeetings } from './data/mockData';
 
 // Firebase Services
 import {
@@ -49,6 +51,9 @@ import { weeklyTasksService } from './services/weeklyTasksService';
 // Support Request Service
 import { supportRequestService } from './services/supportRequestService';
 
+// Meetings Service
+import { meetingsService } from './services/meetingsService';
+
 // UserContext
 import { UserContext } from './contexts/UserContext';
 
@@ -69,6 +74,7 @@ function App() {
   const [milestones, setMilestones] = useState([]);
   const [statistics, setStatistics] = useState([]);
   const [supportRequests, setSupportRequests] = useState([]);
+  const [meetings, setMeetings] = useState([]);
   
   // Loading and error states
   const [isLoading, setIsLoading] = useState(true);
@@ -109,7 +115,8 @@ function App() {
             inventory: mockInventory,
             projects: mockProjects,
             workers: mockWorkers,
-            plans: mockPlans
+            plans: mockPlans,
+            meetings: mockMeetings
           };
           
           const initialized = await initializeFirebaseData(mockData);
@@ -246,6 +253,17 @@ function App() {
           }
         );
 
+        const meetingsUnsub = meetingsService.subscribeToMeetings(
+          (data) => {
+            setMeetings(data);
+            console.log('Meetings updated:', data.length, 'meetings');
+          },
+          (error) => {
+            console.error('Meetings subscription error:', error);
+            addNotification('خطأ في تحميل الاجتماعات', 'error');
+          }
+        );
+
         // Store all unsubscribe functions
         unsubscribes = [
           inventoryUnsub,
@@ -259,7 +277,8 @@ function App() {
           clientsUnsub,
           milestonesUnsub,
           statisticsUnsub,
-          supportRequestsUnsub
+          supportRequestsUnsub,
+          meetingsUnsub
         ];
 
         setConnectionStatus('connected');
@@ -606,6 +625,74 @@ function App() {
     }
   };
 
+  // Action handlers for plans
+  const plansActions = {
+    addPlan: async (plan) => {
+      try {
+        await plansService.addPlan(plan);
+        addNotification('تم رفع المخطط بنجاح', 'success');
+      } catch (error) {
+        console.error('Error adding plan:', error);
+        addNotification('فشل في رفع المخطط', 'error');
+        throw error;
+      }
+    },
+    updatePlan: async (planId, updates) => {
+      try {
+        await plansService.updatePlan(planId, updates);
+        addNotification('تم تحديث المخطط بنجاح', 'success');
+      } catch (error) {
+        console.error('Error updating plan:', error);
+        addNotification('فشل في تحديث المخطط', 'error');
+        throw error;
+      }
+    },
+    deletePlan: async (planId) => {
+      try {
+        await plansService.deletePlan(planId);
+        addNotification('تم حذف المخطط بنجاح', 'success');
+      } catch (error) {
+        console.error('Error deleting plan:', error);
+        addNotification('فشل في حذف المخطط', 'error');
+        throw error;
+      }
+    }
+  };
+
+  // Action handlers for meetings
+  const meetingsActions = {
+    addMeeting: async (meeting) => {
+      try {
+        await meetingsService.addMeeting(meeting);
+        addNotification('تم إنشاء الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error adding meeting:', error);
+        addNotification('فشل في إنشاء الاجتماع', 'error');
+        throw error;
+      }
+    },
+    updateMeeting: async (meetingId, updates) => {
+      try {
+        await meetingsService.updateMeeting(meetingId, updates);
+        addNotification('تم تحديث الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error updating meeting:', error);
+        addNotification('فشل في تحديث الاجتماع', 'error');
+        throw error;
+      }
+    },
+    deleteMeeting: async (meetingId) => {
+      try {
+        await meetingsService.deleteMeeting(meetingId);
+        addNotification('تم حذف الاجتماع بنجاح', 'success');
+      } catch (error) {
+        console.error('Error deleting meeting:', error);
+        addNotification('فشل في حذف الاجتماع', 'error');
+        throw error;
+      }
+    }
+  };
+
   // Handle login
   const handleLogin = (user) => {
     setCurrentUser(user);
@@ -824,6 +911,25 @@ function App() {
                 currentUser={currentUser}
                 projects={projects}
                 supportRequestActions={supportRequestActions}
+              />
+            )}
+
+            {currentView === 'plans' && (
+              <PlansManagement 
+                currentUser={currentUser}
+                plans={plans}
+                projects={projects}
+                plansActions={plansActions}
+              />
+            )}
+
+            {currentView === 'meetings' && (
+              <MeetingsManagement 
+                currentUser={currentUser}
+                meetings={meetings}
+                projects={projects}
+                workers={workers}
+                meetingsActions={meetingsActions}
               />
             )}
           </main>

@@ -528,6 +528,98 @@ export const plansService = {
       if (errorCallback) errorCallback(error);
       return () => {};
     }
+  },
+
+  // إضافة مخطط جديد
+  addPlan: async (planData) => {
+    return retryOperation(async () => {
+      const docRef = await addDoc(collection(db, 'plans'), {
+        ...planData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      console.log('Plan added successfully:', docRef.id);
+      return docRef.id;
+    });
+  },
+
+  // تحديث مخطط
+  updatePlan: async (planId, updateData) => {
+    return retryOperation(async () => {
+      const planRef = doc(db, 'plans', planId);
+      await updateDoc(planRef, {
+        ...updateData,
+        updatedAt: serverTimestamp()
+      });
+      
+      console.log('Plan updated successfully:', planId);
+    });
+  },
+
+  // حذف مخطط
+  deletePlan: async (planId) => {
+    return retryOperation(async () => {
+      await deleteDoc(doc(db, 'plans', planId));
+      console.log('Plan deleted successfully:', planId);
+    });
+  },
+
+  // الحصول على مخططات مشروع معين
+  getProjectPlans: async (projectId) => {
+    return retryOperation(async () => {
+      const q = query(
+        collection(db, 'plans'),
+        where('projectId', '==', projectId),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const plans = [];
+      snapshot.forEach((doc) => {
+        plans.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return plans;
+    });
+  },
+
+  // تحديث حالة المخطط
+  updatePlanStatus: async (planId, status) => {
+    return retryOperation(async () => {
+      const planRef = doc(db, 'plans', planId);
+      await updateDoc(planRef, {
+        status,
+        updatedAt: serverTimestamp()
+      });
+      
+      console.log('Plan status updated:', planId, status);
+    });
+  },
+
+  // إضافة تعديل للمخطط
+  addPlanModification: async (planId, modificationData) => {
+    return retryOperation(async () => {
+      const planRef = doc(db, 'plans', planId);
+      const planDoc = await getDoc(planRef);
+      
+      if (planDoc.exists()) {
+        const plan = planDoc.data();
+        const modifications = plan.modifications || [];
+        
+        modifications.push({
+          ...modificationData,
+          date: new Date().toISOString()
+        });
+        
+        await updateDoc(planRef, {
+          modifications,
+          updatedAt: serverTimestamp()
+        });
+        
+        console.log('Plan modification added:', planId);
+      }
+    });
   }
 };
 
@@ -779,7 +871,7 @@ export const initializeFirebaseData = async (mockData) => {
     console.log('Checking if Firebase data initialization is needed...');
     
     // Check if collections are empty
-    const collections = ['inventory', 'projects', 'workers', 'plans'];
+    const collections = ['inventory', 'projects', 'workers', 'plans', 'meetings'];
     const batch = writeBatch(db);
     let needsInitialization = false;
     

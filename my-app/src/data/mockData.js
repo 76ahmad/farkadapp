@@ -90,8 +90,119 @@ export const mockPlans = [
   {
     id: 1,
     name: 'مخطط الطابق الأرضي',
-    version: '1.2',
-    uploadDate: '2024-06-10',
-    status: 'معتمد'
+    projectId: 1,
+    projectName: 'فيلا الأحمد',
+    version: '1.0',
+    category: 'مخطط معماري',
+    status: 'معتمد',
+    uploadDate: '2024-01-15',
+    uploadedBy: 'المهندس المعماري',
+    description: 'مخطط تفصيلي للطابق الأرضي',
+    fileName: 'ground_floor_plan.pdf',
+    fileSize: 2048576,
+    fileType: 'application/pdf',
+    modifications: []
+  },
+  {
+    id: 2,
+    name: 'مخطط الطابق الأول',
+    projectId: 1,
+    projectName: 'فيلا الأحمد',
+    version: '2.1',
+    category: 'مخطط معماري',
+    status: 'قيد المراجعة',
+    uploadDate: '2024-01-20',
+    uploadedBy: 'المهندس المعماري',
+    description: 'مخطط محدث للطابق الأول',
+    fileName: 'first_floor_plan_v2.pdf',
+    fileSize: 1536000,
+    fileType: 'application/pdf',
+    modifications: [
+      {
+        title: 'تعديل غرفة النوم الرئيسية',
+        description: 'تم تغيير أبعاد غرفة النوم الرئيسية',
+        type: 'تعديل بسيط',
+        date: '2024-01-18T10:30:00Z',
+        modifiedBy: 'المهندس المعماري'
+      }
+    ]
+  }
+];
+
+export const mockMeetings = [
+  {
+    id: 1,
+    title: 'اجتماع مراجعة التصميم',
+    projectId: 1,
+    projectName: 'فيلا الأحمد',
+    date: '2024-01-25',
+    startTime: '09:00',
+    endTime: '10:30',
+    type: 'اجتماع مراجعة',
+    location: 'مكتب المهندس المعماري',
+    description: 'مراجعة التصميم النهائي مع العميل',
+    agenda: '1. مراجعة المخططات النهائية\n2. مناقشة التعديلات المطلوبة\n3. تحديد موعد بدء العمل',
+    status: 'مكتمل',
+    isOnline: false,
+    attendees: [
+      { id: 1, name: 'أحمد محمد', role: 'مقاول', confirmed: true },
+      { id: 2, name: 'خالد السالم', role: 'مفتش', confirmed: true },
+      { id: 3, name: 'سارة أحمد', role: 'عميل', confirmed: true }
+    ],
+    createdBy: 'المهندس المعماري',
+    summary: {
+      decisions: 'تم اعتماد التصميم النهائي مع تعديلات بسيطة',
+      tasks: 'بدء العمل في الأسبوع القادم',
+      notes: 'العميل راضٍ عن التصميم',
+      nextMeeting: 'اجتماع متابعة بعد أسبوعين'
+    }
+  },
+  {
+    id: 2,
+    title: 'اجتماع تنسيق العمل',
+    projectId: 1,
+    projectName: 'فيلا الأحمد',
+    date: '2024-02-01',
+    startTime: '14:00',
+    endTime: '15:00',
+    type: 'اجتماع تنسيق',
+    location: 'موقع المشروع',
+    description: 'تنسيق العمل بين الفرق المختلفة',
+    agenda: '1. توزيع المهام\n2. تحديد الجدول الزمني\n3. مناقشة المتطلبات',
+    status: 'مجدول',
+    isOnline: false,
+    attendees: [
+      { id: 1, name: 'أحمد محمد', role: 'مقاول', confirmed: true },
+      { id: 4, name: 'محمد علي', role: 'مدير موقع', confirmed: false },
+      { id: 5, name: 'علي حسن', role: 'مشرف', confirmed: false }
+    ],
+    createdBy: 'أحمد محمد'
+  },
+  {
+    id: 3,
+    title: 'اجتماع طارئ - مشكلة في الأساسات',
+    projectId: 2,
+    projectName: 'برج السكني',
+    date: '2024-01-30',
+    startTime: '16:00',
+    endTime: '17:00',
+    type: 'اجتماع طارئ',
+    location: 'موقع المشروع',
+    description: 'مناقشة مشكلة في الأساسات',
+    agenda: '1. تقييم المشكلة\n2. اقتراح الحلول\n3. تحديد الإجراءات المطلوبة',
+    status: 'مكتمل',
+    isOnline: false,
+    attendees: [
+      { id: 1, name: 'أحمد محمد', role: 'مقاول', confirmed: true },
+      { id: 2, name: 'خالد السالم', role: 'مفتش', confirmed: true },
+      { id: 6, name: 'حسن محمد', role: 'مهندس إنشائي', confirmed: true }
+    ],
+    createdBy: 'أحمد محمد',
+    summary: {
+      decisions: 'تم الاتفاق على حل المشكلة بتقوية الأساسات',
+      tasks: 'تنفيذ الحل في الأسبوع القادم',
+      notes: 'المشكلة تحتاج مراقبة مستمرة',
+      nextMeeting: 'اجتماع متابعة بعد أسبوع'
+    }
   }
 ];
