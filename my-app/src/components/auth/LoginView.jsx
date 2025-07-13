@@ -2,9 +2,19 @@ import React, { useState } from 'react';
 import { auth } from '../../firebase/config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
+const roles = [
+  { value: 'architect', label: 'مهندس معماري' },
+  { value: 'site_manager', label: 'مدير موقع' },
+  { value: 'contractor', label: 'مقاول' },
+  { value: 'worker', label: 'عامل' },
+  { value: 'inspector', label: 'مفتش/بلدية' },
+  { value: 'client', label: 'عميل/مالك' },
+];
+
 function LoginView({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState(roles[0].value);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -20,7 +30,7 @@ function LoginView({ onLogin }) {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      onLogin({ uid: user.uid, email: user.email });
+      onLogin({ uid: user.uid, email: user.email, role });
     } catch (err) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
@@ -39,11 +49,35 @@ function LoginView({ onLogin }) {
       <div style={{ background: 'none', padding: 0, borderRadius: 24, width: '100%', maxWidth: 400, textAlign: 'center' }}>
         {/* Logo */}
         <div style={{ marginBottom: 24 }}>
-          <img src="/logo.png" alt="Logo" style={{ height: 120, margin: '0 auto', display: 'block' }} />
+          <img src="/bina-logo.png" alt="Logo" style={{ height: 120, margin: '0 auto', display: 'block' }} />
         </div>
         {/* App Name */}
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 24 }}>
           <span style={{ color: '#FFF6D6', fontSize: 48, fontWeight: 'bold', letterSpacing: 2 }}>BINA</span>
+        </div>
+        {/* Role select */}
+        <div style={{ marginBottom: 24 }}>
+          <select
+            value={role}
+            onChange={e => setRole(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              borderRadius: 16,
+              border: 'none',
+              background: '#FFF6D6',
+              fontSize: 18,
+              color: '#222',
+              outline: 'none',
+              marginBottom: 0,
+              textAlign: 'right',
+              direction: 'rtl',
+            }}
+          >
+            {roles.map(r => (
+              <option key={r.value} value={r.value}>{r.label}</option>
+            ))}
+          </select>
         </div>
         {/* Form */}
         <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
