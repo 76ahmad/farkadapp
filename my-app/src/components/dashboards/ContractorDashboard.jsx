@@ -17,6 +17,8 @@ import {
   LineChart as RechartsLineChart, Line, Area, AreaChart,
   RadialBarChart, RadialBar, ComposedChart
 } from 'recharts';
+import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 
 const ContractorDashboard = ({
   currentUser,
@@ -33,6 +35,29 @@ const ContractorDashboard = ({
   const [animationPhase, setAnimationPhase] = useState(0);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // قسم الموافقة على المستخدمين الجدد
+  const [pendingUsers, setPendingUsers] = useState([]);
+  useEffect(() => {
+    async function fetchPendingUsers() {
+      const q = query(collection(db, 'users'), where('status', '==', 'pending'));
+      const querySnapshot = await getDocs(q);
+      const users = [];
+      querySnapshot.forEach((docu) => {
+        users.push({ id: docu.id, ...docu.data() });
+      });
+      setPendingUsers(users);
+    }
+    fetchPendingUsers();
+  }, []);
+  async function approveUser(userId) {
+    await updateDoc(doc(db, 'users', userId), { status: 'approved' });
+    setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+  }
+  async function rejectUser(userId) {
+    await updateDoc(doc(db, 'users', userId), { status: 'rejected' });
+    setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+  }
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -831,6 +856,23 @@ const ContractorDashboard = ({
             <span className="text-gray-700 font-medium">لوحة تحكم المقاول المتقدمة - إدارة ذكية للمشاريع</span>
             <Diamond className="h-5 w-5 text-purple-500" />
           </div>
+        </div>
+
+        {/* قسم الموافقة على المستخدمين الجدد */}
+        <div className="max-w-2xl mx-auto my-8 bg-white border border-gray-200 rounded-2xl shadow-lg p-6">
+          <h2 className="text-xl font-bold mb-4 text-gray-900">طلبات التسجيل الجديدة</h2>
+          {pendingUsers.length === 0 && <p className="text-gray-500">لا يوجد طلبات جديدة.</p>}
+          <ul className="space-y-3">
+            {pendingUsers.map(user => (
+              <li key={user.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <span>{user.email} - {user.role}</span>
+                <div className="flex gap-2">
+                  <button onClick={() => approveUser(user.id)} className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg">موافقة</button>
+                  <button onClick={() => rejectUser(user.id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg">رفض</button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

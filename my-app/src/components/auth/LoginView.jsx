@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { auth } from '../../firebase/config'; // Assuming firebase config is here
+import { auth, db } from '../../firebase/config'; // Assuming firebase config is here
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 function LoginView({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -23,14 +24,26 @@ function LoginView({ onLogin }) {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Assuming user data includes a 'type' or 'role' field
-      // You might need to fetch additional user data from Firestore here
       const user = userCredential.user;
-      console.log('Logged in user:', user);
-      onLogin({ uid: user.uid, email: user.email, type: role }); // Pass user data to App.js
+      // جلب بيانات المستخدم من Firestore
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        if (userData.status === 'pending') {
+          setError('طلبك قيد المراجعة. انتظر موافقة المدير.');
+        } else if (userData.status === 'approved') {
+          onLogin({ uid: user.uid, email: user.email, type: userData.role, ...userData });
+        } else if (userData.status === 'rejected') {
+          setError('تم رفض طلبك. تواصل مع الإدارة.');
+        } else {
+          setError('حالة المستخدم غير معروفة. تواصل مع الدعم.');
+        }
+      } else {
+        setError('لم يتم العثور على بيانات المستخدم.');
+      }
     } catch (err) {
       console.error('Login error:', err.message);
-      // Provide more user-friendly error messages
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
       } else if (err.code === 'auth/invalid-email') {
