@@ -547,8 +547,8 @@ const TaskDistributionView = ({
                     <p>لا يوجد عمال متاحين</p>
                   </div>
                 ) : (
-                  filteredWorkers.map(worker => (
-                    <WorkerCard key={worker.id} worker={worker} />
+                  filteredWorkers.map((worker, index) => (
+                    <WorkerCard key={worker.id || index} worker={worker} />
                   ))
                 )}
               </div>
@@ -591,7 +591,7 @@ const TaskDistributionView = ({
                             {day}
                           </h4>
                           <div className="space-y-2">
-                            {dayTasks.map(task => {
+                            {dayTasks.map((task, taskIndex) => {
                               const assignedWorkerIds = taskAssignments[task.id] || [];
                               const assignedWorkerObjects = assignedWorkerIds.map(id => 
                                 availableWorkers.find(w => w.id === id)
@@ -599,7 +599,7 @@ const TaskDistributionView = ({
                               
                               return (
                                 <TaskCard
-                                  key={task.id}
+                                  key={task.id || taskIndex}
                                   task={task}
                                   assignedWorkers={assignedWorkerObjects}
                                 />

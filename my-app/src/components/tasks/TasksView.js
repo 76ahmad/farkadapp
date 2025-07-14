@@ -369,9 +369,9 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], proj
                 <p className="text-gray-500">لا توجد مهام مكلف بها حالياً</p>
               </div>
             ) : (
-              workerFilteredTasks.map(task => (
+              workerFilteredTasks.map((task, index) => (
                 <div
-                  key={task.id}
+                  key={task.id || index}
                   className={`border rounded-lg p-4 ${
                     task.completed ? 'bg-gray-50 opacity-75' : 'bg-white'
                   } ${isOverdue(task.dueDate, task.completed) ? 'border-red-300 bg-red-50' : ''}`}
@@ -540,9 +540,9 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], proj
           {filteredTasks.length === 0 ? (
             <p className="text-gray-500 text-center py-8">لا توجد مهام</p>
           ) : (
-            filteredTasks.map(task => (
+            filteredTasks.map((task, index) => (
               <div
-                key={task.id}
+                key={task.id || index}
                 className={`border rounded-lg p-4 ${
                   task.completed ? 'bg-gray-50 opacity-75' : 'bg-white'
                 } ${isOverdue(task.dueDate, task.completed) ? 'border-red-300' : ''}`}
