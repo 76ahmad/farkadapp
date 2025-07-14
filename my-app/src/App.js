@@ -23,9 +23,10 @@ import SupportRequestView from './components/requests/SupportRequestView';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import NotificationSystem from './components/shared/NotificationSystem';
+import AIInsights from './components/dashboards/AIInsights';
 
 // Data - ONLY for initial setup if Firebase is empty
-import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans } from './data/mockData';
+// تم حذف الاستيراد: import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans } from './data/mockData';
 
 // Firebase Services
 import {
@@ -105,19 +106,9 @@ function App() {
 
         // Initialize Firebase data only if collections are empty
         if (!dataInitialized) {
-          const mockData = {
-            inventory: mockInventory,
-            projects: mockProjects,
-            workers: mockWorkers,
-            plans: mockPlans
-          };
-          
-          const initialized = await initializeFirebaseData(mockData);
-          setDataInitialized(true);
-          
-          if (initialized) {
-            addNotification('تم تهيئة البيانات الأولية بنجاح', 'success');
-          }
+          // احذف أي كود متعلق بـ mockData أو initializeFirebaseData(mockData)
+          // في useEffect الخاص بتهيئة البيانات:
+          // احذف أي كود متعلق بـ mockData أو initializeFirebaseData(mockData)
         }
 
         // Set up real-time listeners for all collections
@@ -620,6 +611,14 @@ function App() {
     addNotification('تم تسجيل الخروج بنجاح', 'info');
   };
 
+  // أضف خيار لوحة الإدارة المالية في التنقل
+  // تم حذف الاستيراد: const goToFinancialDashboard = () => setCurrentView('financial');
+  // تم حذف خيار التنقل
+  // تم حذف شرط عرض FinancialDashboard
+
+  // أضف خيار صفحة الذكاء الاصطناعي في التنقل
+  const goToAIInsights = () => setCurrentView('ai');
+
   // Show loading screen
   if (isLoading) {
     return (
@@ -674,6 +673,8 @@ function App() {
             setCurrentView={setCurrentView}
             onLogout={handleLogout}
             connectionStatus={connectionStatus}
+            // تم حذف تمرير onGoToFinancialDashboard للهيدر
+            onGoToAIInsights={goToAIInsights}
           />
           
           <NotificationSystem notifications={notifications} />
@@ -825,6 +826,10 @@ function App() {
                 projects={projects}
                 supportRequestActions={supportRequestActions}
               />
+            )}
+
+            {currentView === 'ai' && (
+              <AIInsights />
             )}
           </main>
 

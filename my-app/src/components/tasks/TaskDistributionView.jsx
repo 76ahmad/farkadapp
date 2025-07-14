@@ -6,6 +6,7 @@ import {
   Send, Save, RefreshCw, Filter, Search,
   DragHandle, Info, Target, Layers, Award
 } from 'lucide-react';
+import { tasksService } from '../../services/firebaseService';
 
 const TaskDistributionView = ({ 
   currentUser, 
@@ -190,6 +191,11 @@ const TaskDistributionView = ({
       // حفظ كل توزيع
       for (const [taskId, workerIds] of Object.entries(taskAssignments)) {
         await weeklyTasksActions.assignTaskToWorkers(taskId, workerIds);
+        // تحديث المهمة في مجموعة tasks (المهام الرئيسية)
+        if (workerIds.length > 0) {
+          // اختر أول عامل (أو يمكنك التوزيع على أكثر من عامل حسب الحاجة)
+          await tasksService.updateTask(taskId, { assignedTo: workerIds[0] });
+        }
       }
       
       alert('تم حفظ التوزيعات بنجاح');
@@ -203,7 +209,7 @@ const TaskDistributionView = ({
 
   // إرسال التوزيعات للعمال
   const sendToWorkers = async () => {
-    if (confirm('هل تريد إرسال المهام المكلفة إلى العمال؟')) {
+    if (window.confirm('هل تريد إرسال المهام المكلفة إلى العمال؟')) {
       await saveDistributions();
       // يمكن إضافة منطق إرسال الإشعارات هنا
       alert('تم إرسال المهام إلى العمال');
@@ -541,8 +547,8 @@ const TaskDistributionView = ({
                     <p>لا يوجد عمال متاحين</p>
                   </div>
                 ) : (
-                  filteredWorkers.map(worker => (
-                    <WorkerCard key={worker.id} worker={worker} />
+                  filteredWorkers.map((worker, index) => (
+                    <WorkerCard key={worker.id || index} worker={worker} />
                   ))
                 )}
               </div>
@@ -585,7 +591,7 @@ const TaskDistributionView = ({
                             {day}
                           </h4>
                           <div className="space-y-2">
-                            {dayTasks.map(task => {
+                            {dayTasks.map((task, taskIndex) => {
                               const assignedWorkerIds = taskAssignments[task.id] || [];
                               const assignedWorkerObjects = assignedWorkerIds.map(id => 
                                 availableWorkers.find(w => w.id === id)
@@ -593,7 +599,7 @@ const TaskDistributionView = ({
                               
                               return (
                                 <TaskCard
-                                  key={task.id}
+                                  key={task.id || taskIndex}
                                   task={task}
                                   assignedWorkers={assignedWorkerObjects}
                                 />

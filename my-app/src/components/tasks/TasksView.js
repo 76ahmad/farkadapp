@@ -8,7 +8,7 @@ import {
 import SiteManagerTasksView from './SiteManagerTasksView';
 import WeeklyTasksView from './WeeklyTasksView';
 
-const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], taskActions }) => {
+const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], projects = [], taskActions }) => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -84,26 +84,37 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], task
       description: '',
       priority: 'medium',
       dueDate: '',
-      project: 'فيلا الأحمد',
-      assignedTo: 'worker'
+      projectId: projects[0]?.id || '',
+      assignedTo: '',
     });
+
+    // عند اختيار مشروع، ابحث عن مدير الموقع الخاص به
+    const handleProjectChange = (e) => {
+      const selectedProjectId = e.target.value;
+      setFormData({ ...formData, projectId: selectedProjectId });
+      // ابحث عن مدير الموقع الخاص بالمشروع
+      const project = projects.find(p => p.id === selectedProjectId);
+      if (project && project.siteManagerId) {
+        setFormData(f => ({ ...f, assignedTo: project.siteManagerId }));
+      } else {
+        setFormData(f => ({ ...f, assignedTo: '' }));
+      }
+    };
 
     const handleSubmit = async (e) => {
       e.preventDefault();
-      
-      if (!formData.title || !formData.dueDate) {
-        alert('يرجى ملء العنوان وتاريخ الاستحقاق');
+      if (!formData.title || !formData.dueDate || !formData.projectId) {
+        alert('يرجى ملء العنوان وتاريخ الاستحقاق واختيار المشروع');
         return;
       }
-
       try {
         await taskActions.addTask({
           ...formData,
           completed: false,
           createdBy: currentUser?.displayName || 'مستخدم',
-          createdAt: new Date().toISOString().split('T')[0]
+          createdById: currentUser?.id || '',
+          createdAt: new Date().toISOString(),
         });
-        
         setShowAddTask(false);
         alert('تم إضافة المهمة بنجاح!');
       } catch (error) {
@@ -116,7 +127,6 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], task
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-md">
           <h3 className="text-lg font-bold mb-4">إضافة مهمة جديدة</h3>
-          
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               type="text"
@@ -126,7 +136,6 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], task
               className="w-full p-2 border rounded"
               required
             />
-            
             <textarea
               placeholder="وصف المهمة (اختياري)"
               value={formData.description}
@@ -134,7 +143,6 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], task
               className="w-full p-2 border rounded h-20"
               rows="3"
             />
-            
             <select
               value={formData.priority}
               onChange={(e) => setFormData({...formData, priority: e.target.value})}
@@ -144,7 +152,6 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], task
               <option value="medium">أولوية متوسطة</option>
               <option value="high">أولوية عالية</option>
             </select>
-            
             <input
               type="date"
               value={formData.dueDate}
@@ -152,25 +159,26 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], task
               className="w-full p-2 border rounded"
               required
             />
-            
+            {/* اختيار المشروع */}
+            <select
+              value={formData.projectId}
+              onChange={handleProjectChange}
+              className="w-full p-2 border rounded"
+              required
+            >
+              <option value="">اختر المشروع</option>
+              {projects.map(project => (
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </select>
+            {/* تعيين مدير الموقع تلقائيًا */}
             <input
               type="text"
-              placeholder="المشروع"
-              value={formData.project}
-              onChange={(e) => setFormData({...formData, project: e.target.value})}
-              className="w-full p-2 border rounded"
+              value={formData.assignedTo ? workers.find(w => w.id === formData.assignedTo)?.name || '' : ''}
+              placeholder="سيتم تعيين المهمة لمدير الموقع تلقائيًا"
+              className="w-full p-2 border rounded bg-gray-100"
+              disabled
             />
-            
-            <select
-              value={formData.assignedTo}
-              onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
-              className="w-full p-2 border rounded"
-            >
-              <option value="worker">عامل</option>
-              <option value="site_manager">مدير الموقع</option>
-              <option value="contractor">المقاول</option>
-            </select>
-            
             <div className="flex justify-end gap-2">
               <button
                 type="button"
@@ -361,9 +369,9 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], task
                 <p className="text-gray-500">لا توجد مهام مكلف بها حالياً</p>
               </div>
             ) : (
-              workerFilteredTasks.map(task => (
+              workerFilteredTasks.map((task, index) => (
                 <div
-                  key={task.id}
+                  key={task.id || index}
                   className={`border rounded-lg p-4 ${
                     task.completed ? 'bg-gray-50 opacity-75' : 'bg-white'
                   } ${isOverdue(task.dueDate, task.completed) ? 'border-red-300 bg-red-50' : ''}`}
@@ -532,9 +540,9 @@ const TasksView = ({ currentUser, inventory = [], workers = [], tasks = [], task
           {filteredTasks.length === 0 ? (
             <p className="text-gray-500 text-center py-8">لا توجد مهام</p>
           ) : (
-            filteredTasks.map(task => (
+            filteredTasks.map((task, index) => (
               <div
-                key={task.id}
+                key={task.id || index}
                 className={`border rounded-lg p-4 ${
                   task.completed ? 'bg-gray-50 opacity-75' : 'bg-white'
                 } ${isOverdue(task.dueDate, task.completed) ? 'border-red-300' : ''}`}
