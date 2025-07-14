@@ -6,6 +6,7 @@ import {
   Send, Save, RefreshCw, Filter, Search,
   DragHandle, Info, Target, Layers, Award
 } from 'lucide-react';
+import { tasksService } from '../../services/firebaseService';
 
 const TaskDistributionView = ({ 
   currentUser, 
@@ -190,6 +191,11 @@ const TaskDistributionView = ({
       // حفظ كل توزيع
       for (const [taskId, workerIds] of Object.entries(taskAssignments)) {
         await weeklyTasksActions.assignTaskToWorkers(taskId, workerIds);
+        // تحديث المهمة في مجموعة tasks (المهام الرئيسية)
+        if (workerIds.length > 0) {
+          // اختر أول عامل (أو يمكنك التوزيع على أكثر من عامل حسب الحاجة)
+          await tasksService.updateTask(taskId, { assignedTo: workerIds[0] });
+        }
       }
       
       alert('تم حفظ التوزيعات بنجاح');
