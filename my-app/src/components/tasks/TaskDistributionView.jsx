@@ -209,7 +209,7 @@ const TaskDistributionView = ({
 
   // إرسال التوزيعات للعمال
   const sendToWorkers = async () => {
-    if (confirm('هل تريد إرسال المهام المكلفة إلى العمال؟')) {
+    if (window.confirm('هل تريد إرسال المهام المكلفة إلى العمال؟')) {
       await saveDistributions();
       // يمكن إضافة منطق إرسال الإشعارات هنا
       alert('تم إرسال المهام إلى العمال');
