@@ -23,6 +23,7 @@ import SupportRequestView from './components/requests/SupportRequestView';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import NotificationSystem from './components/shared/NotificationSystem';
+import FinancialDashboard from './components/dashboards/FinancialDashboard';
 
 // Data - ONLY for initial setup if Firebase is empty
 import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans } from './data/mockData';
@@ -620,6 +621,9 @@ function App() {
     addNotification('تم تسجيل الخروج بنجاح', 'info');
   };
 
+  // أضف خيار لوحة الإدارة المالية في التنقل
+  const goToFinancialDashboard = () => setCurrentView('financial');
+
   // Show loading screen
   if (isLoading) {
     return (
@@ -674,6 +678,7 @@ function App() {
             setCurrentView={setCurrentView}
             onLogout={handleLogout}
             connectionStatus={connectionStatus}
+            onGoToFinancialDashboard={goToFinancialDashboard}
           />
           
           <NotificationSystem notifications={notifications} />
@@ -825,6 +830,10 @@ function App() {
                 projects={projects}
                 supportRequestActions={supportRequestActions}
               />
+            )}
+
+            {currentView === 'financial' && (
+              <FinancialDashboard />
             )}
           </main>
 
