@@ -24,6 +24,7 @@ import ErrorBoundary from './components/shared/ErrorBoundary';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import NotificationSystem from './components/shared/NotificationSystem';
 import FinancialDashboard from './components/dashboards/FinancialDashboard';
+import AIInsights from './components/dashboards/AIInsights';
 
 // Data - ONLY for initial setup if Firebase is empty
 import { mockInventory, mockInventoryLog, mockProjects, mockWorkers, mockPlans } from './data/mockData';
@@ -623,6 +624,8 @@ function App() {
 
   // أضف خيار لوحة الإدارة المالية في التنقل
   const goToFinancialDashboard = () => setCurrentView('financial');
+  // أضف خيار صفحة الذكاء الاصطناعي في التنقل
+  const goToAIInsights = () => setCurrentView('ai');
 
   // Show loading screen
   if (isLoading) {
@@ -679,6 +682,7 @@ function App() {
             onLogout={handleLogout}
             connectionStatus={connectionStatus}
             onGoToFinancialDashboard={goToFinancialDashboard}
+            onGoToAIInsights={goToAIInsights}
           />
           
           <NotificationSystem notifications={notifications} />
@@ -834,6 +838,10 @@ function App() {
 
             {currentView === 'financial' && (
               <FinancialDashboard />
+            )}
+
+            {currentView === 'ai' && (
+              <AIInsights />
             )}
           </main>
 
