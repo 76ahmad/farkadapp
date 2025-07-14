@@ -11,7 +11,9 @@ const Header = ({
   setCurrentView, 
   onLogout, 
   connectionStatus,
-  lowStockCount = 0 
+  lowStockCount = 0,
+  onGoToFinancialDashboard,
+  onGoToAIInsights
 }) => {
   
   const getConnectionIcon = () => {
@@ -157,7 +159,26 @@ const Header = ({
             </span>
           )}
         </button>
-        
+        {/* زر الإدارة المالية */}
+        {onGoToFinancialDashboard && (
+          <button 
+            onClick={onGoToFinancialDashboard} 
+            className={`hover:text-orange-600 transition-colors flex items-center gap-1 ${currentView === 'financial' ? 'text-orange-600 font-semibold' : ''}`}
+          >
+            <FileText className="h-4 w-4" />
+            الإدارة المالية
+          </button>
+        )}
+        {/* زر الذكاء الاصطناعي */}
+        {onGoToAIInsights && (
+          <button 
+            onClick={onGoToAIInsights} 
+            className={`hover:text-indigo-600 transition-colors flex items-center gap-1 ${currentView === 'ai' ? 'text-indigo-600 font-semibold' : ''}`}
+          >
+            <BarChart3 className="h-4 w-4" />
+            الذكاء الاصطناعي
+          </button>
+        )}
         <button 
           onClick={() => setCurrentView('workers')} 
           className={`hover:text-blue-600 transition-colors flex items-center gap-1 ${currentView === 'workers' ? 'text-blue-600 font-semibold' : ''}`}
