@@ -23,7 +23,6 @@ import SupportRequestView from './components/requests/SupportRequestView';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import LoadingSpinner from './components/shared/LoadingSpinner';
 import NotificationSystem from './components/shared/NotificationSystem';
-import FinancialDashboard from './components/dashboards/FinancialDashboard';
 import AIInsights from './components/dashboards/AIInsights';
 
 // Data - ONLY for initial setup if Firebase is empty
@@ -623,7 +622,10 @@ function App() {
   };
 
   // أضف خيار لوحة الإدارة المالية في التنقل
-  const goToFinancialDashboard = () => setCurrentView('financial');
+  // تم حذف الاستيراد: const goToFinancialDashboard = () => setCurrentView('financial');
+  // تم حذف خيار التنقل
+  // تم حذف شرط عرض FinancialDashboard
+
   // أضف خيار صفحة الذكاء الاصطناعي في التنقل
   const goToAIInsights = () => setCurrentView('ai');
 
@@ -681,7 +683,7 @@ function App() {
             setCurrentView={setCurrentView}
             onLogout={handleLogout}
             connectionStatus={connectionStatus}
-            onGoToFinancialDashboard={goToFinancialDashboard}
+            // تم حذف تمرير onGoToFinancialDashboard للهيدر
             onGoToAIInsights={goToAIInsights}
           />
           
@@ -834,10 +836,6 @@ function App() {
                 projects={projects}
                 supportRequestActions={supportRequestActions}
               />
-            )}
-
-            {currentView === 'financial' && (
-              <FinancialDashboard />
             )}
 
             {currentView === 'ai' && (

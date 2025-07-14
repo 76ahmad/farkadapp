@@ -160,15 +160,7 @@ const Header = ({
           )}
         </button>
         {/* زر الإدارة المالية */}
-        {onGoToFinancialDashboard && (
-          <button 
-            onClick={onGoToFinancialDashboard} 
-            className={`hover:text-orange-600 transition-colors flex items-center gap-1 ${currentView === 'financial' ? 'text-orange-600 font-semibold' : ''}`}
-          >
-            <FileText className="h-4 w-4" />
-            الإدارة المالية
-          </button>
-        )}
+        {/* تم الحذف بناءً على طلب المستخدم */}
         {/* زر الذكاء الاصطناعي */}
         {onGoToAIInsights && (
           <button 
