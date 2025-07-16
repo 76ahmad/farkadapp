@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { auth } from '../../firebase/config'; // Assuming firebase config is here
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
-function LoginView({ onLogin, setCurrentView }) {
+function LoginView({ onLogin, setCurrentView, setForceWorkersView }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('contractor'); // Default role
@@ -125,12 +125,12 @@ function LoginView({ onLogin, setCurrentView }) {
           للتجربة: أدخل أي بريد إلكتروني وكلمة مرور
         </p>
         <button
-          onClick={handleDemoAdminLogin}
+          onClick={() => setForceWorkersView && setForceWorkersView(true)}
           className="mt-4 w-full py-2 px-4 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
           type="button"
           disabled={loading}
         >
-          الدخول إلى الموافقة على المستخدمين (تجريبي)
+          الموافقة على المستخدمين
         </button>
       </div>
     </div>

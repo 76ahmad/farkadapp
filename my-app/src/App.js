@@ -78,6 +78,7 @@ function App() {
   const [error, setError] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [forceWorkersView, setForceWorkersView] = useState(false);
 
   // Add notification function
   const addNotification = (message, type = 'info') => {
@@ -652,11 +653,30 @@ function App() {
   }
 
   // Show login screen if not authenticated
-  if (!currentUser) {
+  if (!currentUser && !forceWorkersView) {
     return (
       <ErrorBoundary>
         <div className="min-h-screen bg-gray-50">
-          <LoginView onLogin={handleLogin} setCurrentView={setCurrentView} />
+          <LoginView onLogin={handleLogin} setCurrentView={setCurrentView} setForceWorkersView={setForceWorkersView} />
+          <NotificationSystem notifications={notifications} />
+        </div>
+      </ErrorBoundary>
+    );
+  }
+
+  // إذا كان forceWorkersView مفعلًا، اعرض صفحة الموافقة على المستخدمين مباشرة
+  if (forceWorkersView) {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gray-50">
+          <WorkersManagement 
+            currentUser={null}
+            workers={workers}
+            projects={projects}
+            attendanceData={attendanceData}
+            workerActions={workerActions}
+            attendanceActions={attendanceActions}
+          />
           <NotificationSystem notifications={notifications} />
         </div>
       </ErrorBoundary>
