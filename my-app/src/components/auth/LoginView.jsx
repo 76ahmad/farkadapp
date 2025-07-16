@@ -43,6 +43,26 @@ function LoginView({ onLogin, setCurrentView }) {
     }
   };
 
+  // زر تسجيل دخول تجريبي للموافقة على المستخدمين
+  const handleDemoAdminLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, 'admin@admin.com', '123456');
+      const user = userCredential.user;
+      if (onLogin) {
+        onLogin({ uid: user.uid, email: user.email, type: 'contractor', displayName: 'مدير النظام' });
+      }
+      if (setCurrentView) {
+        setCurrentView('workers');
+      }
+    } catch (err) {
+      setError('فشل تسجيل الدخول التجريبي. تأكد من وجود الحساب admin@admin.com وكلمة المرور 123456');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
@@ -105,11 +125,12 @@ function LoginView({ onLogin, setCurrentView }) {
           للتجربة: أدخل أي بريد إلكتروني وكلمة مرور
         </p>
         <button
-          onClick={() => setCurrentView && setCurrentView('workers')}
+          onClick={handleDemoAdminLogin}
           className="mt-4 w-full py-2 px-4 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
           type="button"
+          disabled={loading}
         >
-          الموافقة على المستخدمين
+          الدخول إلى الموافقة على المستخدمين (تجريبي)
         </button>
       </div>
     </div>
