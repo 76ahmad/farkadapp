@@ -1,63 +1,90 @@
 import React from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { 
+      hasError: false, 
+      error: null, 
+      errorInfo: null 
+    };
   }
 
   static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI
     return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log the error to console or error reporting service
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+    console.error('Error caught by boundary:', error, errorInfo);
     this.setState({
       error: error,
       errorInfo: errorInfo
     });
+    
+    // يمكن إرسال الخطأ إلى خدمة مراقبة الأخطاء هنا
+    // مثل Sentry أو LogRocket
   }
+
+  handleRetry = () => {
+    this.setState({ 
+      hasError: false, 
+      error: null, 
+      errorInfo: null 
+    });
+  };
 
   render() {
     if (this.state.hasError) {
-      // Custom error UI
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-lg">
-            <div className="text-red-500 text-6xl mb-4">🚨</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">حدث خطأ غير متوقع</h2>
-            <p className="text-gray-600 mb-4">
-              نعتذر، حدث خطأ في التطبيق. يرجى إعادة تحميل الصفحة أو المحاولة مرة أخرى لاحقاً.
-            </p>
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-md text-center">
+            <div className="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+            </div>
             
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              حدث خطأ غير متوقع
+            </h2>
+            
+            <p className="text-gray-600 mb-6">
+              عذراً، حدث خطأ في التطبيق. يرجى المحاولة مرة أخرى.
+            </p>
+
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="text-left bg-gray-100 p-4 rounded mb-4">
-                <summary className="cursor-pointer font-semibold text-red-600 mb-2">
+              <details className="mb-6 text-left">
+                <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
                   تفاصيل الخطأ (للمطورين)
                 </summary>
-                <pre className="text-sm text-red-500 whitespace-pre-wrap">
-                  {this.state.error && this.state.error.toString()}
-                  <br />
-                  {this.state.errorInfo.componentStack}
-                </pre>
+                <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono overflow-auto">
+                  <div className="mb-2">
+                    <strong>Error:</strong>
+                    <pre className="whitespace-pre-wrap">{this.state.error.toString()}</pre>
+                  </div>
+                  {this.state.errorInfo && (
+                    <div>
+                      <strong>Stack:</strong>
+                      <pre className="whitespace-pre-wrap">{this.state.errorInfo.componentStack}</pre>
+                    </div>
+                  )}
+                </div>
               </details>
             )}
-            
-            <div className="space-x-4">
-              <button 
-                onClick={() => window.location.reload()} 
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={this.handleRetry}
+                className="btn-primary flex items-center gap-2"
               >
-                إعادة تحميل الصفحة
+                <RefreshCw className="h-4 w-4" />
+                إعادة المحاولة
               </button>
-              <button 
-                onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })} 
-                className="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 transition-colors"
+              
+              <button
+                onClick={() => window.location.reload()}
+                className="btn-secondary"
               >
-                المحاولة مرة أخرى
+                تحديث الصفحة
               </button>
             </div>
           </div>
@@ -65,7 +92,6 @@ class ErrorBoundary extends React.Component {
       );
     }
 
-    // If no error, render children normally
     return this.props.children;
   }
 }

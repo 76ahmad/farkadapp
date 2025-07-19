@@ -4,27 +4,45 @@ import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// إعدادات Firebase الخاصة بك
+// Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyA9r4nbD1R4Uh8_F3dx8lUbj2vD0AG6v2s",
-  authDomain: "farkad-scheduler.firebaseapp.com",
-  projectId: "farkad-scheduler",
-  storageBucket: "farkad-scheduler.appspot.com", // ✅ تم التصحيح هنا
-  messagingSenderId: "71149615141",
-  appId: "1:71149615141:web:6a01aa5f3d6c69db31a7cc",
-  measurementId: "G-ZGQVM1C0SS"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
-// تهيئة Firebase
+// Validate required environment variables
+const requiredEnvVars = [
+  'REACT_APP_FIREBASE_API_KEY',
+  'REACT_APP_FIREBASE_AUTH_DOMAIN',
+  'REACT_APP_FIREBASE_PROJECT_ID',
+  'REACT_APP_FIREBASE_STORAGE_BUCKET',
+  'REACT_APP_FIREBASE_MESSAGING_SENDER_ID',
+  'REACT_APP_FIREBASE_APP_ID'
+];
+
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingVars);
+  console.error('Please create a .env file with the required Firebase configuration.');
+  throw new Error('Missing Firebase configuration. Please check your .env file.');
+}
+
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// تهيئة Firestore Database
+// Initialize Firestore Database
 const db = getFirestore(app);
 
-// تهيئة Authentication
+// Initialize Authentication
 const auth = getAuth(app);
 
-// تهيئة Analytics بشكل آمن (فقط إذا كان مدعوماً)
+// Initialize Analytics safely
 let analytics = null;
 if (typeof window !== 'undefined') {
   isSupported().then((supported) => {
@@ -45,7 +63,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// للتطوير المحلي - Firebase Emulator (إذا كنت تستخدمه)
+// Connect to Firestore Emulator in development
 if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_EMULATOR === 'true') {
   try {
     console.log('🔧 Connecting to Firestore Emulator...');
@@ -56,6 +74,6 @@ if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_EMULATOR
   }
 }
 
-// تصدير المتغيرات
+// Export variables
 export { db, auth, analytics };
 export default app;

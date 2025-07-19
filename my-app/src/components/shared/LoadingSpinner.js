@@ -1,41 +1,38 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 
-function LoadingSpinner({ message = 'جاري التحميل...', size = 'large' }) {
+const LoadingSpinner = ({ 
+  size = 'md', 
+  text = 'جاري التحميل...', 
+  fullScreen = false,
+  className = '' 
+}) => {
   const sizeClasses = {
-    small: 'h-8 w-8',
-    medium: 'h-16 w-16',
-    large: 'h-32 w-32'
+    sm: 'h-4 w-4',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12',
+    xl: 'h-16 w-16'
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        {/* Animated spinner */}
-        <div className={`animate-spin rounded-full border-b-2 border-blue-600 mx-auto ${sizeClasses[size]}`}>
-          <div className="sr-only">Loading...</div>
-        </div>
-        
-        {/* Loading message */}
-        <p className="mt-4 text-gray-600 text-lg font-medium">{message}</p>
-        
-        {/* Additional loading indicators */}
-        <div className="mt-6 flex justify-center space-x-2">
-          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-        </div>
-        
-        {/* Progress bar simulation */}
-        <div className="mt-6 w-64 mx-auto">
-          <div className="bg-gray-200 rounded-full h-2">
-            <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">إعداد الاتصال مع قاعدة البيانات...</p>
-        </div>
-      </div>
+  const spinner = (
+    <div className={`flex flex-col items-center justify-center ${className}`}>
+      <Loader2 className={`${sizeClasses[size]} animate-spin text-primary-600`} />
+      {text && (
+        <p className="mt-2 text-sm text-gray-600 text-center">{text}</p>
+      )}
     </div>
   );
-}
+
+  if (fullScreen) {
+    return (
+      <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+        {spinner}
+      </div>
+    );
+  }
+
+  return spinner;
+};
 
 export default LoadingSpinner;
 
