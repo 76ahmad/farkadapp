@@ -4,34 +4,16 @@ import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// Firebase configuration from environment variables
+// Firebase configuration - using direct values temporarily
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyA9r4nbD1R4Uh8_F3dx8lUbj2vD0AG6v2s",
+  authDomain: "farkad-scheduler.firebaseapp.com",
+  projectId: "farkad-scheduler",
+  storageBucket: "farkad-scheduler.appspot.com",
+  messagingSenderId: "71149615141",
+  appId: "1:71149615141:web:6a01aa5f3d6c69db31a7cc",
+  measurementId: "G-ZGQVM1C0SS"
 };
-
-// Validate required environment variables
-const requiredEnvVars = [
-  'REACT_APP_FIREBASE_API_KEY',
-  'REACT_APP_FIREBASE_AUTH_DOMAIN',
-  'REACT_APP_FIREBASE_PROJECT_ID',
-  'REACT_APP_FIREBASE_STORAGE_BUCKET',
-  'REACT_APP_FIREBASE_MESSAGING_SENDER_ID',
-  'REACT_APP_FIREBASE_APP_ID'
-];
-
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-if (missingVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingVars);
-  console.error('Please create a .env file with the required Firebase configuration.');
-  throw new Error('Missing Firebase configuration. Please check your .env file.');
-}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
