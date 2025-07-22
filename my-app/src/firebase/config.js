@@ -4,27 +4,27 @@ import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// إعدادات Firebase الخاصة بك
+// Firebase configuration - using direct values temporarily
 const firebaseConfig = {
   apiKey: "AIzaSyA9r4nbD1R4Uh8_F3dx8lUbj2vD0AG6v2s",
   authDomain: "farkad-scheduler.firebaseapp.com",
   projectId: "farkad-scheduler",
-  storageBucket: "farkad-scheduler.appspot.com", // ✅ تم التصحيح هنا
+  storageBucket: "farkad-scheduler.appspot.com",
   messagingSenderId: "71149615141",
   appId: "1:71149615141:web:6a01aa5f3d6c69db31a7cc",
   measurementId: "G-ZGQVM1C0SS"
 };
 
-// تهيئة Firebase
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// تهيئة Firestore Database
+// Initialize Firestore Database
 const db = getFirestore(app);
 
-// تهيئة Authentication
+// Initialize Authentication
 const auth = getAuth(app);
 
-// تهيئة Analytics بشكل آمن (فقط إذا كان مدعوماً)
+// Initialize Analytics safely
 let analytics = null;
 if (typeof window !== 'undefined') {
   isSupported().then((supported) => {
@@ -45,7 +45,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// للتطوير المحلي - Firebase Emulator (إذا كنت تستخدمه)
+// Connect to Firestore Emulator in development
 if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_EMULATOR === 'true') {
   try {
     console.log('🔧 Connecting to Firestore Emulator...');
@@ -56,6 +56,6 @@ if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_EMULATOR
   }
 }
 
-// تصدير المتغيرات
+// Export variables
 export { db, auth, analytics };
 export default app;

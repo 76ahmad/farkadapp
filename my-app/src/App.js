@@ -656,7 +656,7 @@ function App() {
     return (
       <ErrorBoundary>
         <div className="min-h-screen bg-gray-50">
-          <LoginView onLogin={handleLogin} />
+          <LoginView onLogin={handleLogin} setCurrentView={setCurrentView} />
           <NotificationSystem notifications={notifications} />
         </div>
       </ErrorBoundary>
