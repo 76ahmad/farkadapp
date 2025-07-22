@@ -57,5 +57,5 @@ if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_EMULATOR
 }
 
 // Export variables
-export { db, auth, analytics };
+export { db, auth, analytics, firebaseConfig };
 export default app;
