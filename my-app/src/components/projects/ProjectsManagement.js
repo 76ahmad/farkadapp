@@ -1,70 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building, Plus, Calendar, Users, DollarSign, 
   MapPin, Clock, Edit2, Trash2, Eye, AlertCircle,
   CheckCircle, XCircle, TrendingUp, FileText
 } from 'lucide-react';
+import { projectsService } from '../../services/firebaseService';
 
 const ProjectsManagement = ({ currentUser }) => {
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      name: 'فيلا الأحمد',
-      description: 'بناء فيلا سكنية 500 متر مربع',
-      location: 'الرياض - حي النرجس',
-      status: 'active',
-      startDate: '2024-01-15',
-      expectedEndDate: '2024-08-30',
-      actualEndDate: null,
-      budget: 500000,
-      spent: 325000,
-      progress: 65,
-      siteManager: { id: 1, name: 'أحمد محمد' },
-      inspector: { id: 1, name: 'خالد السالم' },
-      architect: { id: 1, name: 'سارة أحمد' },
-      client: { name: 'عبدالله الأحمد', phone: '0501234567' },
-      phases: [
-        { id: 1, name: 'الأساسات', progress: 100, status: 'completed' },
-        { id: 2, name: 'الهيكل', progress: 90, status: 'active' },
-        { id: 3, name: 'التشطيبات', progress: 40, status: 'active' },
-        { id: 4, name: 'التسليم', progress: 0, status: 'pending' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'مجمع سكني - الوادي',
-      description: 'مجمع سكني 10 وحدات',
-      location: 'جدة - حي الحمدانية',
-      status: 'active',
-      startDate: '2024-03-01',
-      expectedEndDate: '2025-03-01',
-      actualEndDate: null,
-      budget: 2500000,
-      spent: 875000,
-      progress: 35,
-      siteManager: { id: 2, name: 'محمد علي' },
-      inspector: { id: 2, name: 'سامي العمري' },
-      architect: { id: 2, name: 'فاطمة سالم' },
-      client: { name: 'شركة الوادي للاستثمار', phone: '0502345678' },
-      phases: [
-        { id: 1, name: 'الأساسات', progress: 80, status: 'active' },
-        { id: 2, name: 'الهيكل', progress: 20, status: 'active' },
-        { id: 3, name: 'التشطيبات', progress: 0, status: 'pending' },
-        { id: 4, name: 'التسليم', progress: 0, status: 'pending' }
-      ]
-    }
-  ]);
-
+  const [projects, setProjects] = useState([]);
   const [showAddProject, setShowAddProject] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [editingProject, setEditingProject] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // الاشتراك في المشاريع من Firebase
+  useEffect(() => {
+    setLoading(true);
+    const unsubscribe = projectsService.subscribeToProjects(
+      (data) => {
+        setProjects(data);
+        setLoading(false);
+      },
+      (error) => {
+        setLoading(false);
+        alert('حدث خطأ أثناء تحميل المشاريع: ' + error.message);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   // دالة تعديل المشروع
-  const updateProject = (projectId, updatedData) => {
-    setProjects(prev => prev.map(project => 
-      project.id === projectId ? { ...project, ...updatedData } : project
-    ));
+  const updateProject = async (projectId, updatedData) => {
+    try {
+      await projectsService.updateProject(projectId, updatedData);
+    } catch (error) {
+      alert('حدث خطأ أثناء تحديث المشروع: ' + error.message);
+    }
+  };
+
+  // دالة حذف المشروع
+  const deleteProject = async (projectId) => {
+    if (!window.confirm('هل أنت متأكد من حذف المشروع؟')) return;
+    try {
+      await projectsService.deleteProject(projectId);
+      alert('تم حذف المشروع بنجاح!');
+    } catch (error) {
+      alert('حدث خطأ أثناء حذف المشروع: ' + error.message);
+    }
   };
 
   // حساب الإحصائيات
@@ -247,11 +230,10 @@ const ProjectsManagement = ({ currentUser }) => {
       { id: 3, name: 'مريم الشمري' }
     ];
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
       
       const newProject = {
-        id: Date.now(),
         ...formData,
         budget: parseFloat(formData.budget),
         spent: 0,
@@ -269,9 +251,13 @@ const ProjectsManagement = ({ currentUser }) => {
         ]
       };
 
-      setProjects(prev => [...prev, newProject]);
-      setShowAddProject(false);
-      alert('تم إضافة المشروع بنجاح!');
+      try {
+        await projectsService.addProject(newProject);
+        setShowAddProject(false);
+        alert('تم إضافة المشروع بنجاح!');
+      } catch (error) {
+        alert('حدث خطأ أثناء إضافة المشروع: ' + error.message);
+      }
     };
 
     return (
@@ -791,6 +777,12 @@ const ProjectsManagement = ({ currentUser }) => {
                     className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                   >
                     <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteProject(project.id)}
+                    className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
