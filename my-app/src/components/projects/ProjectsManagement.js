@@ -55,9 +55,10 @@ const ProjectsManagement = ({ currentUser }) => {
 
   // دالة حذف المشروع
   const deleteProject = async (projectId) => {
+    console.log('حذف مشروع:', projectId, typeof projectId);
     if (!window.confirm('هل أنت متأكد من حذف المشروع؟')) return;
     try {
-      await projectsService.deleteProject(projectId);
+      await projectsService.deleteProject(String(projectId));
       alert('تم حذف المشروع بنجاح!');
     } catch (error) {
       alert('حدث خطأ أثناء حذف المشروع: ' + error.message);
