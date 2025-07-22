@@ -27,6 +27,12 @@ const ProjectsManagement = ({ currentUser }) => {
           inspector: project.inspector && typeof project.inspector === 'object' ? project.inspector : { name: 'غير محدد' },
           architect: project.architect && typeof project.architect === 'object' ? project.architect : { name: 'غير محدد' },
         }));
+        // لوج تحذيري لأي مشروع ناقص الحقول
+        safeData.forEach((p, i) => {
+          if (!p.client || !p.siteManager || !p.inspector || !p.architect) {
+            console.warn('⚠️ مشروع ناقص الحقول الحرجة:', i, p);
+          }
+        });
         setProjects(safeData);
         setLoading(false);
       },
