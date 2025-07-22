@@ -467,8 +467,8 @@ const ProjectsManagement = ({ currentUser }) => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">العميل</p>
-                  <p className="font-medium">{project.client.name}</p>
-                  <p className="text-sm text-gray-600">{project.client.phone}</p>
+                  <p className="font-medium">{project.client?.name || 'غير محدد'}</p>
+                  <p className="text-sm text-gray-600">{project.client?.phone || ''}</p>
                 </div>
               </div>
 
@@ -514,15 +514,15 @@ const ProjectsManagement = ({ currentUser }) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gray-50 p-3 rounded">
                   <p className="text-sm text-gray-500">مدير الموقع</p>
-                  <p className="font-medium">{project.siteManager.name}</p>
+                  <p className="font-medium">{project.siteManager?.name || 'غير محدد'}</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded">
                   <p className="text-sm text-gray-500">المفتش</p>
-                  <p className="font-medium">{project.inspector.name}</p>
+                  <p className="font-medium">{project.inspector?.name || 'غير محدد'}</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded">
                   <p className="text-sm text-gray-500">المهندس المعماري</p>
-                  <p className="font-medium">{project.architect.name}</p>
+                  <p className="font-medium">{project.architect?.name || 'غير محدد'}</p>
                 </div>
               </div>
             </div>
@@ -722,11 +722,11 @@ const ProjectsManagement = ({ currentUser }) => {
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">العميل</span>
-                    <span className="font-medium">{project.client.name}</span>
+                    <span className="font-medium">{project.client?.name || 'غير محدد'}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">مدير الموقع</span>
-                    <span className="font-medium">{project.siteManager.name}</span>
+                    <span className="font-medium">{project.siteManager?.name || 'غير محدد'}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">التاريخ المتوقع</span>
