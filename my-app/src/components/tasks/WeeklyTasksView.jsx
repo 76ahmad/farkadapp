@@ -119,7 +119,7 @@ const WeeklyTasksView = ({
         weekNumber: currentWeek,
         year: currentYear,
         status: 'pending',
-        createdBy: currentUser?.displayName
+        createdBy: currentUser?.displayName || "غير محدد",
       };
 
       try {
