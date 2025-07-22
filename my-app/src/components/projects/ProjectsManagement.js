@@ -19,7 +19,15 @@ const ProjectsManagement = ({ currentUser }) => {
     setLoading(true);
     const unsubscribe = projectsService.subscribeToProjects(
       (data) => {
-        setProjects(data);
+        // معالجة أولية: ضمان وجود client وsiteManager وinspector وarchitect ككائنات
+        const safeData = data.map(project => ({
+          ...project,
+          client: project.client && typeof project.client === 'object' ? project.client : { name: 'غير محدد', phone: '' },
+          siteManager: project.siteManager && typeof project.siteManager === 'object' ? project.siteManager : { name: 'غير محدد' },
+          inspector: project.inspector && typeof project.inspector === 'object' ? project.inspector : { name: 'غير محدد' },
+          architect: project.architect && typeof project.architect === 'object' ? project.architect : { name: 'غير محدد' },
+        }));
+        setProjects(safeData);
         setLoading(false);
       },
       (error) => {
