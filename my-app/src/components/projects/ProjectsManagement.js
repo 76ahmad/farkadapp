@@ -586,28 +586,28 @@ const ProjectsManagement = ({ currentUser }) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">الميزانية الكلية</p>
-                  <p className="text-xl font-bold">{project.budget.toLocaleString()} ريال</p>
+                  <p className="text-xl font-bold">{(project.budget ?? 0).toLocaleString()} ريال</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">المصروف حتى الآن</p>
-                  <p className="text-xl font-bold text-red-600">{project.spent.toLocaleString()} ريال</p>
+                  <p className="text-xl font-bold text-red-600">{(project.spent ?? 0).toLocaleString()} ريال</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">المتبقي</p>
                   <p className="text-xl font-bold text-green-600">
-                    {(project.budget - project.spent).toLocaleString()} ريال
+                    {((project.budget ?? 0) - (project.spent ?? 0)).toLocaleString()} ريال
                   </p>
                 </div>
               </div>
               <div className="mt-4">
                 <div className="flex justify-between text-sm mb-1">
                   <span>نسبة الصرف</span>
-                  <span>{Math.round((project.spent / project.budget) * 100)}%</span>
+                  <span>{Math.round(((project.spent ?? 0) / (project.budget ?? 0)) * 100)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-red-500 h-2 rounded-full"
-                    style={{ width: `${(project.spent / project.budget) * 100}%` }}
+                    style={{ width: `${((project.spent ?? 0) / (project.budget ?? 0)) * 100}%` }}
                   />
                 </div>
               </div>
@@ -769,11 +769,11 @@ const ProjectsManagement = ({ currentUser }) => {
                 <div className="bg-gray-50 p-3 rounded mb-4">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-gray-600">الميزانية</span>
-                    <span className="font-medium">{project.budget.toLocaleString()} ريال</span>
+                    <span className="font-medium">{(project.budget ?? 0).toLocaleString()} ريال</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">المصروف</span>
-                    <span className="font-medium text-red-600">{project.spent.toLocaleString()} ريال</span>
+                    <span className="font-medium text-red-600">{(project.spent ?? 0).toLocaleString()} ريال</span>
                   </div>
                 </div>
 
